@@ -1,0 +1,66 @@
+<main class="container layout-column">
+  <app-toolbar
+    title="Projetos"
+    subtitle="Acompanhe os orcamentos e configure os detalhes de cada projeto"
+    [breadcrumbs]="[{ label: 'Projetos' }]"
+    [hasProjectedActions]="true"
+    [showThemeToggle]="true">
+    <div toolbar-actions>
+      <ds-button variant="primary" (buttonClick)="onCreateProject()">
+        Novo projeto
+      </ds-button>
+      <ds-button variant="ghost" (buttonClick)="reload()" [disabled]="loading">
+        Recarregar
+      </ds-button>
+    </div>
+  </app-toolbar>
+
+  <section *ngIf="loading" class="loading-state">
+    <span class="loading-spinner" aria-hidden="true"></span>
+    <span>Carregando projetos...</span>
+  </section>
+
+  <section *ngIf="error && !loading" class="alert" role="alert">
+    {{ error }}
+    <div class="table-actions" style="margin-top: var(--space-2);">
+      <ds-button variant="ghost" (buttonClick)="reload()">Tentar novamente</ds-button>
+    </div>
+  </section>
+
+  <section *ngIf="!loading && !error && projects.length" class="table-wrapper" aria-live="polite">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Projeto</th>
+          <th>Total</th>
+          <th>Epicos</th>
+          <th>Itens</th>
+          <th class="col-actions">Acoes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let project of projects; trackBy: trackByProject">
+          <td>
+            <strong>{{ project.name }}</strong>
+          </td>
+          <td>{{ project.total | currencyFormat }}</td>
+          <td>{{ project.epics.length }}</td>
+          <td>{{ project.budgetItems.length }}</td>
+          <td>
+            <div class="table-actions">
+              <ds-button variant="ghost" size="sm" (buttonClick)="onViewClient(project.id)">Visualizacao cliente</ds-button>
+              <ds-button variant="secondary" size="sm" (buttonClick)="onViewSettings(project.id)">Configuracoes</ds-button>
+              <ds-button variant="primary" size="sm" (buttonClick)="onViewItems(project.id)">Itens</ds-button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section *ngIf="!loading && !error && !projects.length" class="sg-empty-state" aria-live="polite">
+    <h3>Nenhum projeto cadastrado</h3>
+    <p>Comece criando um novo projeto e configure seus dados de orcamento.</p>
+    <ds-button variant="primary" size="sm" (buttonClick)="onCreateProject()">Criar projeto</ds-button>
+  </section>
+</main>

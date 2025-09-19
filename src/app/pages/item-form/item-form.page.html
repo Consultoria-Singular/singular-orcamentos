@@ -1,0 +1,71 @@
+<main class="container layout-column">
+  <app-toolbar
+    [title]="isEdit ? 'Editar item' : 'Novo item'"
+    [breadcrumbs]="breadcrumbs"
+    [hasProjectedActions]="true"
+    [showThemeToggle]="true">
+    <div toolbar-actions>
+      <ds-button variant="secondary" (buttonClick)="onCancel()">Cancelar</ds-button>
+      <ds-button variant="primary" type="submit" (buttonClick)="submitForm()" [disabled]="form.invalid || saving">
+        {{ isEdit ? 'Salvar alteracoes' : 'Adicionar item' }}
+      </ds-button>
+    </div>
+  </app-toolbar>
+
+  <section *ngIf="loading" class="loading-state">
+    <span class="loading-spinner"></span>
+    <span>Carregando informacoes...</span>
+  </section>
+
+  <section *ngIf="error && !loading" class="alert" role="alert">
+    {{ error }}
+  </section>
+
+  <form *ngIf="!loading" class="layout-column" [formGroup]="form" (ngSubmit)="submitForm()">
+    <ds-card title="Informacoes do item">
+      <div class="form-grid">
+        <label class="sg-field">
+          <span class="sg-label">Epico *</span>
+          <select class="sg-select" formControlName="epicId">
+            <option value="" disabled>Selecione um epico</option>
+            <option *ngFor="let epic of epics" [value]="epic.id">{{ epic.name }}</option>
+          </select>
+          <span *ngIf="form.controls.epicId.touched && form.controls.epicId.invalid" class="sg-help sg-help--error">
+            Escolha um epico.
+          </span>
+        </label>
+
+        <label class="sg-field">
+          <span class="sg-label">Nome do item *</span>
+          <input class="sg-input" type="text" formControlName="name" placeholder="Ex.: Desenvolvimento modulo X" />
+          <span *ngIf="form.controls.name.touched && form.controls.name.invalid" class="sg-help sg-help--error">
+            Informe um nome.
+          </span>
+        </label>
+
+        <label class="sg-field">
+          <span class="sg-label">Horas *</span>
+          <input class="sg-input" type="number" min="0" step="0.5" formControlName="hours" />
+          <span *ngIf="form.controls.hours.touched && form.controls.hours.invalid" class="sg-help sg-help--error">
+            Informe as horas (minimo 0).
+          </span>
+        </label>
+      </div>
+
+      <div class="flags">
+        <label class="sg-checkbox">
+          <input type="checkbox" formControlName="qa" />
+          <span>Incluir QA</span>
+        </label>
+        <label class="sg-checkbox">
+          <input type="checkbox" formControlName="architect" />
+          <span>Incluir Arquiteto</span>
+        </label>
+        <label class="sg-checkbox">
+          <input type="checkbox" formControlName="design" />
+          <span>Incluir Design</span>
+        </label>
+      </div>
+    </ds-card>
+  </form>
+</main>

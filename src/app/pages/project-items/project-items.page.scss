@@ -1,0 +1,13 @@
+:host {
+  display: block;
+  background: var(--color-bg, #ffffff);
+  color: var(--color-on-bg, #111827);
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  min-width: 720px;
+}

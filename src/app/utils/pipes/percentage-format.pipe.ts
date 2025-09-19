@@ -1,0 +1,20 @@
+﻿import { Pipe, PipeTransform } from '@angular/core';
+
+@Pipe({
+  name: 'percentageFormat',
+  standalone: true
+})
+export class PercentageFormatPipe implements PipeTransform {
+  private readonly formatter = new Intl.NumberFormat('pt-BR', {
+    style: 'percent',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+
+  transform(value: number | null | undefined): string {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+      return this.formatter.format(0);
+    }
+    return this.formatter.format(value);
+  }
+}

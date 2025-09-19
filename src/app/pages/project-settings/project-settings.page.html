@@ -1,0 +1,121 @@
+<main class="container layout-column" *ngIf="!loading; else loadingTpl">
+  <app-toolbar
+    [title]="isNew ? 'Novo projeto' : form.controls.name.value || 'Configuracoes do projeto'"
+    [breadcrumbs]="breadcrumbs"
+    [hasProjectedActions]="true"
+    [showThemeToggle]="true">
+    <div toolbar-actions>
+      <ds-button variant="secondary" (buttonClick)="onCancel()">Cancelar</ds-button>
+      <ds-button variant="primary" type="submit" [disabled]="form.invalid || saving" (buttonClick)="submitForm()">
+        {{ isNew ? 'Criar projeto' : 'Salvar alteracoes' }}
+      </ds-button>
+    </div>
+  </app-toolbar>
+
+  <section *ngIf="error" class="alert" role="alert">
+    {{ error }}
+  </section>
+
+  <form [formGroup]="form" class="layout-column" (ngSubmit)="submitForm()">
+    <ds-card title="Informacoes gerais">
+      <div class="form-grid">
+        <label class="sg-field">
+          <span class="sg-label">Nome do projeto *</span>
+          <input
+            class="sg-input"
+            type="text"
+            formControlName="name"
+            placeholder="Digite o nome do projeto" />
+          <span *ngIf="form.controls.name.touched && form.controls.name.invalid" class="sg-help sg-help--error">
+            Informe um nome.
+          </span>
+        </label>
+      </div>
+    </ds-card>
+
+    <ds-card title="Rates por funcao">
+      <div class="form-grid two-columns">
+        <label class="sg-field" *ngFor="let rateControl of rateControls">
+          <span class="sg-label">{{ rateControl.label }} *</span>
+          <input
+            class="sg-input"
+            type="number"
+            min="0"
+            step="0.01"
+            [formControlName]="rateControl.control" />
+        </label>
+      </div>
+    </ds-card>
+
+    <ds-card title="Percentuais de alocacao">
+      <div class="form-grid two-columns">
+        <label class="sg-field" *ngFor="let percentageControl of percentageControls">
+          <span class="sg-label">{{ percentageControl.label }} *</span>
+          <input
+            class="sg-input"
+            type="number"
+            min="0"
+            step="0.01"
+            [formControlName]="percentageControl.control" />
+        </label>
+      </div>
+    </ds-card>
+  </form>
+
+  <ds-card title="Epicos do projeto" *ngIf="!isNew" [showFooter]="false">
+    <div *ngIf="epicsLoading" class="loading-state">
+      <span class="loading-spinner"></span>
+      <span>Carregando epicos...</span>
+    </div>
+
+    <div *ngIf="!epicsLoading && !epics.length" class="sg-empty-state">
+      <h3>Nenhum epico cadastrado</h3>
+      <p>Use o formulario abaixo para adicionar o primeiro epico.</p>
+    </div>
+
+    <ul class="epics-list">
+      <li *ngFor="let epic of epics; trackBy: trackByEpic" class="epic-item">
+        <ng-container *ngIf="editingEpicId === epic.id; else viewEpic">
+          <input class="sg-input" type="text" [formControl]="editEpicControl" />
+          <div class="table-actions">
+            <ds-button size="sm" variant="primary" (buttonClick)="saveEpicEdit(epic)">Salvar</ds-button>
+            <ds-button size="sm" variant="ghost" (buttonClick)="cancelEpicEdit()">Cancelar</ds-button>
+          </div>
+        </ng-container>
+        <ng-template #viewEpic>
+          <span class="epic-name">{{ epic.name }}</span>
+          <div class="table-actions">
+            <ds-button size="sm" variant="ghost" (buttonClick)="editEpic(epic)">Renomear</ds-button>
+            <ds-button size="sm" variant="danger" (buttonClick)="removeEpic(epic)">Remover</ds-button>
+          </div>
+        </ng-template>
+      </li>
+    </ul>
+
+    <div class="new-epic">
+      <input
+        class="sg-input"
+        type="text"
+        placeholder="Nome do novo epico"
+        [formControl]="newEpicControl" />
+      <ds-button
+        variant="primary"
+        size="sm"
+        [disabled]="newEpicControl.invalid || epicsLoading"
+        (buttonClick)="addEpic()">
+        Adicionar epico
+      </ds-button>
+    </div>
+  </ds-card>
+
+  <ds-card *ngIf="isNew" title="Epicos do projeto">
+    <p>Salve o projeto antes de gerenciar os epicos.</p>
+  </ds-card>
+</main>
+
+<ng-template #loadingTpl>
+  <section class="container loading-state" aria-live="polite">
+    <span class="loading-spinner"></span>
+    <span>Carregando dados do projeto...</span>
+  </section>
+</ng-template>

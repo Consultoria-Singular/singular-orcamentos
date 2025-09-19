@@ -1,0 +1,21 @@
+:host {
+  display: block;
+  background: var(--color-bg, #ffffff);
+  color: var(--color-on-bg, #111827);
+}
+
+form {
+  gap: var(--space-4);
+}
+
+.flags {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.sg-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}

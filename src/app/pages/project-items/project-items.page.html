@@ -1,0 +1,80 @@
+<main class="container layout-column">
+  <app-toolbar
+    [title]="project()?.name || 'Itens do projeto'"
+    [breadcrumbs]="breadcrumbs()"
+    [hasProjectedActions]="true"
+    [showThemeToggle]="true">
+    <div toolbar-actions>
+      <ds-button variant="secondary" (buttonClick)="goToSettings()">Configuracoes</ds-button>
+      <ds-button variant="primary" (buttonClick)="onAddItem()">Adicionar item</ds-button>
+    </div>
+  </app-toolbar>
+
+  <section *ngIf="loading()" class="loading-state">
+    <span class="loading-spinner"></span>
+    <span>Carregando itens...</span>
+  </section>
+
+  <section *ngIf="error() && !loading()" class="alert" role="alert">
+    {{ error() }}
+    <div class="table-actions" style="margin-top: var(--space-2);">
+      <ds-button variant="ghost" (buttonClick)="reload()">Tentar novamente</ds-button>
+    </div>
+  </section>
+
+  <section *ngIf="!loading() && !error()">
+    <div class="filters">
+      <label class="sg-field">
+        <span class="sg-label">Filtrar por epico</span>
+        <select class="sg-select" [value]="selectedEpicId()" (change)="onChangeEpic($event.target.value)">
+          <option value="all">Todos</option>
+          <option *ngFor="let epic of epics()" [value]="epic.id">{{ epic.name }}</option>
+        </select>
+      </label>
+    </div>
+
+    <div *ngIf="!filteredItems().length" class="sg-empty-state">
+      <h3>Nenhum item encontrado</h3>
+      <p>Que tal adicionar um item orcamentario agora mesmo?</p>
+      <ds-button variant="primary" size="sm" (buttonClick)="onAddItem()">Adicionar item</ds-button>
+    </div>
+
+    <div *ngIf="filteredItems().length" class="table-wrapper" aria-live="polite">
+      <table class="sg-table">
+        <thead>
+          <tr>
+            <th>Epico</th>
+            <th>Nome</th>
+            <th>Horas</th>
+            <th>QA</th>
+            <th>Arquiteto</th>
+            <th>Design</th>
+            <th>Custo total</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of filteredItems(); trackBy: trackByItem">
+            <td>{{ getEpicName(item.epicId) }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.hours }}</td>
+            <td>{{ item.qa ? 'Sim' : 'Nao' }}</td>
+            <td>{{ item.architect ? 'Sim' : 'Nao' }}</td>
+            <td>{{ item.design ? 'Sim' : 'Nao' }}</td>
+            <td>{{ formatItemTotal(item) | currencyFormat }}</td>
+            <td>
+              <div class="table-actions">
+                <ds-button size="sm" variant="ghost" (buttonClick)="onEditItem(item)">Editar</ds-button>
+                <ds-button size="sm" variant="danger" (buttonClick)="onDeleteItem(item)">Excluir</ds-button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="table-footer">
+        Total do projeto: <strong>{{ projectTotal() | currencyFormat }}</strong>
+      </div>
+    </div>
+  </section>
+</main>

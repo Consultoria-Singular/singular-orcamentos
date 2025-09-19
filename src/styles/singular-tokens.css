@@ -1,0 +1,182 @@
+
+/* ==========================================================================
+   Singular Design System — Tokens v1.0 (2025-09-19)
+   How to use:
+   1) Put the three lines below at the top of your global styles:
+        @import url('./singular-tokens.css');
+        @import url('./singular-components.css');
+   2) Optional: set dark mode on <html data-theme="dark"> or use prefers-color-scheme
+   3) To adapt to your approved logo, tweak the --brand-* variables.
+   ========================================================================== */
+
+:root {
+  /* Color scheme hint for the UA */
+  color-scheme: light dark;
+
+  /* ================= Brand (edit these to match your logo) ================ */
+  /* Base brand — deep violet as default (accessible with white text) */
+  --color-brand-50:  #eee9fc;
+  --color-brand-100: #ddd3f8;
+  --color-brand-200: #baa6f2;
+  --color-brand-300: #987aeb;
+  --color-brand-400: #754de5;
+  --color-brand-500: #5321de;
+  --color-brand-600: #461bbb; /* recommended for solid buttons */
+  --color-brand-700: #371593;
+  --color-brand-800: #29106f;
+  --color-brand-900: #1e0c50;
+
+  /* Secondary — teal (use 800 for solid backgrounds with white text) */
+  --color-secondary-50:  #e8fcfb;
+  --color-secondary-100: #d2f9f6;
+  --color-secondary-200: #a5f3ed;
+  --color-secondary-300: #77eee5;
+  --color-secondary-400: #4ae8dc;
+  --color-secondary-500: #1de2d3;
+  --color-secondary-600: #18beb1;
+  --color-secondary-700: #13958b;
+  --color-secondary-800: #0e7169; /* recommended for solid */
+  --color-secondary-900: #0a514c;
+
+  /* Accent — rose (500 is accessible with white text) */
+  --color-accent-50:  #fce8ed;
+  --color-accent-100: #f9d2da;
+  --color-accent-200: #f3a5b6;
+  --color-accent-300: #ee7791;
+  --color-accent-400: #e84a6d;
+  --color-accent-500: #e21d48; /* recommended for warnings/ctas */
+  --color-accent-600: #be183d;
+  --color-accent-700: #951330;
+  --color-accent-800: #710f24;
+  --color-accent-900: #510a1a;
+
+  /* Neutrals (gray) */
+  --color-neutral-50:  #F9FAFB;
+  --color-neutral-100: #F3F4F6;
+  --color-neutral-200: #E5E7EB;
+  --color-neutral-300: #D1D5DB;
+  --color-neutral-400: #9CA3AF;
+  --color-neutral-500: #6B7280;
+  --color-neutral-600: #4B5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1F2937;
+  --color-neutral-900: #111827;
+
+  /* Semantic shortcuts */
+  --color-brand:      var(--color-brand-600);
+  --color-on-brand:   #FFFFFF;
+  --color-secondary:  var(--color-secondary-800);
+  --color-on-secondary: #FFFFFF;
+  --color-accent:     var(--color-accent-500);
+  --color-on-accent:  #FFFFFF;
+
+  --color-bg:         #FFFFFF;
+  --color-on-bg:      var(--color-neutral-900);
+  --color-surface-1:  #FFFFFF;
+  --color-surface-2:  var(--color-neutral-50);
+  --color-surface-3:  #FFFFFF;
+  --color-on-surface: var(--color-neutral-900);
+  --color-border:     var(--color-neutral-200);
+  --color-muted:      var(--color-neutral-500);
+
+  --color-success: #16A34A; /* green-600 */
+  --color-on-success: #FFFFFF;
+  --color-warning: #D97706; /* amber-600 */
+  --color-on-warning: #FFFFFF;
+  --color-danger:  #DC2626; /* red-600 */
+  --color-on-danger: #FFFFFF;
+  --color-info:    #0EA5E9; /* sky-500 */
+  --color-on-info: #0B1220;
+
+  /* ================= Typography ========================================== */
+  --font-sans: Inter, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, system-ui, -apple-system, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Type scale (rem) */
+  --text-xs: 0.75rem;   /* 12px */
+  --text-sm: 0.875rem;  /* 14px */
+  --text-md: 1rem;      /* 16px */
+  --text-lg: 1.125rem;  /* 18px */
+  --text-xl: 1.25rem;   /* 20px */
+  --text-2xl: 1.5rem;   /* 24px */
+  --text-3xl: 1.875rem; /* 30px */
+  --text-4xl: 2.25rem;  /* 36px */
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ================= Space & Layout ====================================== */
+  /* 4px baseline grid */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.25rem;  /* 20px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+  --space-10: 2.5rem;  /* 40px */
+  --space-12: 3rem;    /* 48px */
+  --space-16: 4rem;    /* 64px */
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 9999px;
+
+  --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.06);
+  --shadow-md: 0 4px 12px rgba(17, 24, 39, 0.10);
+  --shadow-lg: 0 12px 24px rgba(17, 24, 39, 0.12);
+
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-brand) 30%, transparent);
+
+  --transition-fast: 120ms cubic-bezier(.2,.8,.2,1);
+  --transition-normal: 200ms cubic-bezier(.2,.8,.2,1);
+
+  /* Container widths */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+}
+
+/* ================= Dark theme ============================================ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg:         #0B0F1A;
+    --color-on-bg:      #E5E7EB;
+    --color-surface-1:  #101626;
+    --color-surface-2:  #0E1422;
+    --color-surface-3:  #0F172A;
+    --color-on-surface: #E5E7EB;
+    --color-border:     #1F2A44;
+    --color-muted:      #94A3B8;
+    --focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-brand) 40%, transparent);
+  }
+}
+/* Explicit theme switch: <html data-theme="light|dark"> overrides media query */
+:root[data-theme="light"] {
+  --color-bg:         #FFFFFF;
+  --color-on-bg:      var(--color-neutral-900);
+  --color-surface-1:  #FFFFFF;
+  --color-surface-2:  var(--color-neutral-50);
+  --color-surface-3:  #FFFFFF;
+  --color-on-surface: var(--color-neutral-900);
+  --color-border:     var(--color-neutral-200);
+  --color-muted:      var(--color-neutral-500);
+}
+:root[data-theme="dark"] {
+  --color-bg:         #0B0F1A;
+  --color-on-bg:      #E5E7EB;
+  --color-surface-1:  #101626;
+  --color-surface-2:  #0E1422;
+  --color-surface-3:  #0F172A;
+  --color-on-surface: #E5E7EB;
+  --color-border:     #1F2A44;
+  --color-muted:      #94A3B8;
+}
