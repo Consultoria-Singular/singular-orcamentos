@@ -6,4 +6,24 @@
   qa?: boolean;
   architect?: boolean;
   design?: boolean;
+  devPay?: number;
+  poPay?: number;
+  qaPay?: number;
+  architectPay?: number;
+  designPay?: number;
+  opsPay?: number;
+  poHours?: number;
+  qaHours?: number;
+  architectHours?: number;
+  designHours?: number;
+  opsHours?: number;
+  costSubtotal?: number;
+  marginAmount?: number;
+  pointerAmount?: number;
+  taxAmount?: number;
+  itemTotalCost?: number;
+  totalItem?: number;
+  pointer?: number;
+  margin?: number;
+  taxes?: number;
 }

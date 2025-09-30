@@ -32,9 +32,25 @@ export class ProjectsService {
   }
 
   updateProject(id: string, payload: Project): Observable<Project> {
-    return this.api.put<ProjectDto>(`/projects/${id}`, adaptProjectToDto(payload)).pipe(
-      tap(dto => console.log('[ProjectsService] PUT /projects/' + id + ' response', dto)),
+    return this.api.patch<ProjectDto>(`/projects/${id}`, adaptProjectToDto(payload)).pipe(
+      tap(dto => console.log('[ProjectsService] PATCH /projects/' + id + ' response', dto)),
       map(dto => this.buildProject(dto))
+    );
+  }
+
+  cloneProject(id: string, payload?: { name?: string }): Observable<Project> {
+    const body = payload?.name?.trim().length ? { name: payload.name.trim() } : undefined;
+    return this.api.post<ProjectDto>(`/projects/${id}/clone`, body).pipe(
+      tap(dto => console.log('[ProjectsService] POST /projects/' + id + '/clone response', dto)),
+      map(dto => this.buildProject(dto))
+    );
+  }
+
+  cloneProjectItems(id: string, itemIds: string[]): Observable<Project> {
+    const body = { itemIds };
+    return this.api.post<ProjectDto>(`/projects/${id}/clone-items`, body).pipe(
+      tap(dto => console.log('[ProjectsService] POST /projects/' + id + '/clone-items response', dto)),
+      map(dto => this.buildProject(dto, { preferCalculatedTotal: true }))
     );
   }
 
@@ -42,12 +58,40 @@ export class ProjectsService {
     return this.api.delete<void>(`/projects/${id}`);
   }
 
-  private buildProject(dto: ProjectDto): Project {
+  private buildProject(dto: ProjectDto, options?: { preferCalculatedTotal?: boolean }): Project {
     console.log('[ProjectsService] buildProject DTO in', dto);
     const project = adaptProjectDto(dto);
+    const preferCalculatedTotal = options?.preferCalculatedTotal ?? false;
+    const hasDetailedBudgetItems = Array.isArray(project.budgetItems) && project.budgetItems.some(item => {
+      if (!item) {
+        return false;
+      }
+      const hasName = typeof (item as { name?: unknown }).name === 'string' && String((item as { name?: string }).name).trim().length > 0;
+      const hasHours = typeof (item as { hours?: unknown }).hours === 'number' && !Number.isNaN((item as { hours?: number }).hours);
+      return hasName && hasHours;
+    });
+
+    const totalsSnapshot = project.totals ? { ...project.totals } : undefined;
+    const providedTotalSource = totalsSnapshot?.total ?? project.total;
+    const providedTotal = typeof providedTotalSource === 'number' && !Number.isNaN(providedTotalSource)
+      ? Number(providedTotalSource.toFixed(2))
+      : undefined;
+    const calculatedTotal = hasDetailedBudgetItems ? calculateProjectTotal(project) : undefined;
+    const total = preferCalculatedTotal && calculatedTotal !== undefined
+      ? calculatedTotal
+      : (providedTotal ?? calculatedTotal ?? 0);
+
+    let normalizedTotals = totalsSnapshot ? { ...totalsSnapshot } : undefined;
+    if (normalizedTotals) {
+      normalizedTotals.total = total;
+    } else if (preferCalculatedTotal || total !== 0) {
+      normalizedTotals = { total };
+    }
+
     const projectWithTotal = {
       ...project,
-      total: calculateProjectTotal(project)
+      totals: normalizedTotals,
+      total
     };
     console.log('[ProjectsService] buildProject result', projectWithTotal);
     return projectWithTotal;

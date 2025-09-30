@@ -1,5 +1,14 @@
-﻿import { BudgetItem } from './budget-item.model';
+import { BudgetItem } from './budget-item.model';
 import { Epic } from './epic.model';
+
+export interface ProjectTotals {
+  total?: number;
+  costSubtotal?: number;
+  marginAmount?: number;
+  pointerAmount?: number;
+  taxAmount?: number;
+  [key: string]: number | undefined;
+}
 
 export interface Project {
   id: string;
@@ -20,5 +29,6 @@ export interface Project {
   marginPercentage: number;
   budgetItems: BudgetItem[];
   epics: Epic[];
+  totals?: ProjectTotals;
   total?: number;
 }

@@ -53,7 +53,7 @@ export class BudgetItemsService {
     );
   }
 
-  delete(projectId: string, itemId: string): Observable<void> {
-    return this.api.delete<void>(`/projects/${projectId}/budget-items/${itemId}`);
+  delete(_projectId: string, itemId: string): Observable<void> {
+    return this.api.delete<void>(`/budget-items/${itemId}`);
   }
 }

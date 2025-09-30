@@ -31,6 +31,10 @@ export const appRoutes: Routes = [
     loadComponent: () => import('./pages/item-form/item-form.page').then(m => m.ItemFormPage)
   },
   {
+    path: 'projects/:id/client-view',
+    loadComponent: () => import('./pages/project-client-view/project-client-view.page').then(m => m.ProjectClientViewPage)
+  },
+  {
     path: '**',
     redirectTo: 'projects'
   }

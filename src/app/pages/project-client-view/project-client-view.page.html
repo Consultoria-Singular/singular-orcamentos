@@ -1,0 +1,94 @@
+<main class="container layout-column">
+  <app-toolbar
+    [title]="project()?.name || 'Visualizacao cliente'"
+    [breadcrumbs]="[{ label: 'Projetos', link: '/projects' }, { label: project()?.name || 'Orcamento para cliente' }]"
+    [hasProjectedActions]="false"
+    [showThemeToggle]="true">
+  </app-toolbar>
+
+  <section *ngIf="loading()" class="loading-state">
+    <span class="loading-spinner"></span>
+    <span>Carregando itens do projeto...</span>
+  </section>
+
+  <section *ngIf="error() && !loading()" class="alert" role="alert">
+    {{ error() }}
+    <div class="table-actions">
+      <ds-button variant="ghost" (buttonClick)="loadProject()">Tentar novamente</ds-button>
+    </div>
+  </section>
+
+  <section *ngIf="!loading() && !error()" class="client-view">
+    <div class="project-summary project-summary--top">
+      <section class="project-summary__card project-summary__card--overview">
+        <h4>Total do projeto</h4>
+        <div class="project-summary__row project-summary__row--highlight">
+          <span>Total</span>
+          <span>{{ totalAmount() | currencyFormat }}</span>
+        </div>
+        <div class="project-summary__row">
+          <span>Selecionado</span>
+          <span>{{ selectedTotalAmount() | currencyFormat }}</span>
+        </div>
+      </section>
+      <section class="project-summary__card project-summary__card--actions">
+        <h4>Selecao</h4>
+        <label class="select-all">
+          <input type="checkbox" [checked]="allSelected()" (change)="onToggleSelectAll($event.target.checked)" />
+          <span>Selecionar todos os itens</span>
+        </label>
+        <p class="select-count">{{ selectedCount() }} de {{ items().length }} itens selecionados</p>
+      </section>
+    </div>
+
+    <div *ngIf="items().length; else emptyState" class="table-wrapper" aria-live="polite">
+      <table class="client-table">
+        <thead>
+          <tr>
+            <th>Epico</th>
+            <th>Total</th>
+            <th class="col-actions">
+              <input type="checkbox" [checked]="allSelected()" (change)="onToggleSelectAll($event.target.checked)" aria-label="Selecionar todos" />
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of items(); trackBy: trackByItem">
+            <td>
+              <span class="epic-name">{{ getEpicName(item.epicId) }}</span>
+              <span class="item-name">{{ item.name }}</span>
+            </td>
+            <td class="cell-total">{{ getItemTotal(item) | currencyFormat }}</td>
+            <td class="col-actions">
+              <input
+                type="checkbox"
+                [checked]="isSelected(item)"
+                (change)="toggleSelection(item, $event.target.checked)"
+                aria-label="Selecionar item {{ item.name }}" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="client-actions">
+        <div class="totals">
+          <span>Total selecionado</span>
+          <strong>{{ selectedTotalAmount() | currencyFormat }}</strong>
+        </div>
+        <ds-button
+          variant="primary"
+          [disabled]="cloning() || selectedCount() === 0"
+          (buttonClick)="onGenerateQuote()">
+          {{ cloning() ? 'Gerando...' : 'Gerar orcamento' }}
+        </ds-button>
+      </div>
+    </div>
+
+    <ng-template #emptyState>
+      <div class="sg-empty-state">
+        <h3>Sem itens cadastrados</h3>
+        <p>Adicione itens ao projeto para gerar um orcamento para o cliente.</p>
+      </div>
+    </ng-template>
+  </section>
+</main>

@@ -6,7 +6,7 @@
     [showThemeToggle]="true">
     <div toolbar-actions>
       <ds-button variant="secondary" (buttonClick)="goToSettings()">Configuracoes</ds-button>
-      <ds-button variant="primary" (buttonClick)="onAddItem()">Adicionar item</ds-button>
+      <ds-button ml-2 variant="primary" (buttonClick)="onAddItem()">Adicionar item</ds-button>
     </div>
   </app-toolbar>
 
@@ -23,7 +23,53 @@
   </section>
 
   <section *ngIf="!loading() && !error()">
-    <div class="filters">
+
+    <div *ngIf="!itemRows().length" class="sg-empty-state">
+      <h3>Nenhum item encontrado</h3>
+      <p>Que tal adicionar um item orcamentario agora mesmo?</p>
+      <ds-button variant="primary" size="sm" (buttonClick)="onAddItem()">Adicionar item</ds-button>
+    </div>
+
+    <div *ngIf="itemRows().length" class="table-wrapper" aria-live="polite">
+      <ng-container *ngIf="aggregatedTotals() as totals">
+        <div class="project-summary project-summary--top">
+          <section class="project-summary__card project-summary__card--overview">
+            <h4>Visao geral</h4>
+            <div class="project-summary__row project-summary__row--highlight">
+              <span>Total do projeto</span>
+              <span>{{ projectTotal() | currencyFormat }}</span>
+            </div>
+            <div class="project-summary__row">
+              <span>Margem</span>
+              <span>{{ totals.margin | currencyFormat }}</span>
+            </div>
+            <div class="project-summary__row">
+              <span>Pointer</span>
+              <span>{{ totals.pointer | currencyFormat }}</span>
+            </div>
+            <div class="project-summary__row">
+              <span>Impostos</span>
+              <span>{{ totals.taxes | currencyFormat }}</span>
+            </div>
+            <div class="project-summary__row">
+              <span>Total remuneracao</span>
+              <span>{{ totals.remuneration | currencyFormat }}</span>
+            </div>
+          </section>
+          <section class="project-summary__card project-summary__card--breakdown">
+            <h4>Remuneracao por papel</h4>
+            <ul class="project-summary__breakdown">
+              <li><span>Dev</span><span>{{ totals.dev | currencyFormat }}</span></li>
+              <li><span>PO</span><span>{{ totals.po | currencyFormat }}</span></li>
+              <li><span>QA</span><span>{{ totals.qa | currencyFormat }}</span></li>
+              <li><span>Arquiteto</span><span>{{ totals.architect | currencyFormat }}</span></li>
+              <li><span>Design</span><span>{{ totals.design | currencyFormat }}</span></li>
+              <li><span>Ops</span><span>{{ totals.ops | currencyFormat }}</span></li>
+            </ul>
+          </section>
+        </div>
+
+            <div class="filters">
       <label class="sg-field">
         <span class="sg-label">Filtrar por epico</span>
         <select class="sg-select" [value]="selectedEpicId()" (change)="onChangeEpic($event.target.value)">
@@ -33,48 +79,67 @@
       </label>
     </div>
 
-    <div *ngIf="!filteredItems().length" class="sg-empty-state">
-      <h3>Nenhum item encontrado</h3>
-      <p>Que tal adicionar um item orcamentario agora mesmo?</p>
-      <ds-button variant="primary" size="sm" (buttonClick)="onAddItem()">Adicionar item</ds-button>
-    </div>
-
-    <div *ngIf="filteredItems().length" class="table-wrapper" aria-live="polite">
-      <table class="sg-table">
-        <thead>
-          <tr>
-            <th>Epico</th>
-            <th>Nome</th>
-            <th>Horas</th>
-            <th>QA</th>
-            <th>Arquiteto</th>
-            <th>Design</th>
-            <th>Custo total</th>
-            <th>Acoes</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of filteredItems(); trackBy: trackByItem">
-            <td>{{ getEpicName(item.epicId) }}</td>
-            <td>{{ item.name }}</td>
-            <td>{{ item.hours }}</td>
-            <td>{{ item.qa ? 'Sim' : 'Nao' }}</td>
-            <td>{{ item.architect ? 'Sim' : 'Nao' }}</td>
-            <td>{{ item.design ? 'Sim' : 'Nao' }}</td>
-            <td>{{ formatItemTotal(item) | currencyFormat }}</td>
-            <td>
-              <div class="table-actions">
-                <ds-button size="sm" variant="ghost" (buttonClick)="onEditItem(item)">Editar</ds-button>
-                <ds-button size="sm" variant="danger" (buttonClick)="onDeleteItem(item)">Excluir</ds-button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="table-footer">
-        Total do projeto: <strong>{{ projectTotal() | currencyFormat }}</strong>
-      </div>
+        <table class="sg-table">
+          <thead>
+            <tr>
+              <th>Epico</th>
+              <th>Nome</th>
+              <th>Horas</th>
+              <th>Dev pay</th>
+              <th>PO pay</th>
+              <th>QA pay</th>
+              <th>Arquiteto pay</th>
+              <th>Design pay</th>
+              <th>Ops pay</th>
+              <th>Total do item</th>
+              <th class="col-actions">Acoes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of itemRows(); trackBy: trackByItemRow">
+              <td>{{ getEpicName(row.item.epicId) }}</td>
+              <td>{{ row.item.name }}</td>
+              <td>{{ row.item.hours }}</td>
+              <td>{{ row.cost.devPay | currencyFormat }}</td>
+              <td>{{ row.cost.poPay | currencyFormat }}</td>
+              <td>{{ row.cost.qaPay | currencyFormat }}</td>
+              <td>{{ row.cost.architectPay | currencyFormat }}</td>
+              <td>{{ row.cost.designPay | currencyFormat }}</td>
+              <td>{{ row.cost.opsPay | currencyFormat }}</td>
+              <td>{{ row.cost.totalItem | currencyFormat }}</td>
+              <td class="col-actions">
+                <div class="actions-menu" (click)="$event.stopPropagation()">
+                  <button
+                    type="button"
+                    class="actions-menu__trigger btn btn--ghost btn--icon"
+                    (click)="toggleActionMenu(row.item, $event)"
+                    [attr.aria-expanded]="isItemMenuOpen(row.item)"
+                    aria-haspopup="menu"
+                    [attr.aria-label]="'Acoes do item ' + (row.item.name || getEpicName(row.item.epicId))">
+                    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                      <circle cx="8" cy="3" r="1.5"></circle>
+                      <circle cx="8" cy="8" r="1.5"></circle>
+                      <circle cx="8" cy="13" r="1.5"></circle>
+                    </svg>
+                  </button>
+                  <ul
+                    *ngIf="isItemMenuOpen(row.item)"
+                    class="actions-menu__list"
+                    role="menu"
+                    (click)="$event.stopPropagation()">
+                    <li role="none">
+                      <button class="actions-menu__item" type="button" role="menuitem" (click)="onEditItem(row.item)">Editar</button>
+                    </li>
+                    <li role="none">
+                      <button class="actions-menu__item" type="button" role="menuitem" (click)="onDeleteItem(row.item)">Excluir</button>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </ng-container>
     </div>
   </section>
 </main>
