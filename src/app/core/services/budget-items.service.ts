@@ -41,7 +41,7 @@ export class BudgetItemsService {
 
   update(projectId: string, itemId: string, payload: BudgetItemPayload): Observable<BudgetItem> {
     console.log('[BudgetItemsService] update payload', payload);
-    return this.api.put<BudgetItemDto>(`/projects/${projectId}/budget-items/${itemId}`, payload).pipe(
+    return this.api.patch<BudgetItemDto>(`/budget-items/${itemId}`, payload).pipe(
       tap(dto => console.log('[BudgetItemsService] update response dto', dto)),
       map(dto => {
         const item = adaptBudgetItemDto(dto);
@@ -57,3 +57,4 @@ export class BudgetItemsService {
     return this.api.delete<void>(`/budget-items/${itemId}`);
   }
 }
+
