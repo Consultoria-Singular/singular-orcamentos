@@ -7,6 +7,7 @@ import { ProjectsService } from '../../core/services/projects.service';
 import { ToolbarComponent } from '../../components/shared/toolbar.component';
 import { DsButtonComponent } from '../../components/ds/ds-button.component';
 import { CurrencyFormatPipe } from '../../utils/pipes/currency-format.pipe';
+import { calculateBudgetItemCost } from '../../utils/cost.utils';
 
 @Component({
   selector: 'app-project-client-view',
@@ -99,29 +100,64 @@ export class ProjectClientViewPage implements OnInit {
   }
 
   getItemTotal(item: BudgetItem): number {
-    const candidates = [
-      item.totalItem,
+    const project = this.project();
+    const fallbackCosts = project ? calculateBudgetItemCost(project, item) : undefined;
+
+    const remuneration = this.pickCurrency(
+      item.costSubtotal,
+      fallbackCosts?.subTotalItem,
+      this.sumCurrencies([
+        item.devPay,
+        item.poPay,
+        item.qaPay,
+        item.architectPay,
+        item.designPay,
+        item.opsPay
+      ])
+    ) ?? 0;
+
+    const marginRate = this.resolveRate({
+      amount: this.pickCurrency(item.marginAmount, item.margin),
+      base: remuneration,
+      fallbackRate: this.normalizeRate(project?.marginPercentage),
+      fallbackAmount: fallbackCosts?.margin,
+      fallbackAmountBase: remuneration
+    });
+
+    const totalWithMargin = this.normalizeCurrency(remuneration * (1 + marginRate)) ?? remuneration;
+
+    const pointerRate = this.resolveRate({
+      amount: this.pickCurrency(item.pointerAmount, item.pointer),
+      base: totalWithMargin,
+      fallbackRate: this.normalizeRate(project?.pointerPercentage),
+      fallbackAmount: fallbackCosts?.pointer,
+      fallbackAmountBase: remuneration
+    });
+
+    const totalWithPointer = this.normalizeCurrency(totalWithMargin * (1 + pointerRate)) ?? totalWithMargin;
+
+    const taxRate = this.resolveRate({
+      amount: this.pickCurrency(item.taxAmount, item.taxes),
+      base: totalWithPointer,
+      fallbackRate: this.normalizeRate(project?.taxPercentage),
+      fallbackAmount: fallbackCosts?.taxes,
+      fallbackAmountBase: remuneration
+    });
+
+    const computedTotal = remuneration * (1 + marginRate) * (1 + pointerRate) * (1 + taxRate);
+    const normalizedTotal = this.normalizeCurrency(computedTotal) ?? 0;
+
+    const providedTotal = this.pickCurrency(
       item.itemTotalCost,
-      item.costSubtotal
-    ];
-    const value = candidates.find((v): v is number => typeof v === 'number' && Number.isFinite(v));
-    if (value !== undefined) {
-      return Number(value.toFixed(2));
+      item.totalItem,
+      fallbackCosts?.totalItem
+    );
+
+    if (providedTotal !== undefined && Math.abs(providedTotal - normalizedTotal) <= 0.01) {
+      return providedTotal;
     }
-    const fallback = [
-      item.devPay,
-      item.poPay,
-      item.qaPay,
-      item.architectPay,
-      item.designPay,
-      item.opsPay,
-      item.marginAmount,
-      item.pointerAmount,
-      item.taxAmount
-    ]
-      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
-      .reduce((acc, v) => acc + v, 0);
-    return Number(fallback.toFixed(2));
+
+    return normalizedTotal;
   }
 
   getItemKey(item: BudgetItem): string {
@@ -130,6 +166,76 @@ export class ProjectClientViewPage implements OnInit {
     }
     const name = typeof item.name === 'string' ? item.name.trim() : '';
     return item.id ?? `${item.epicId}-${name}`;
+  }
+
+  private normalizeCurrency(value: number | undefined): number | undefined {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return Number(value.toFixed(2));
+    }
+    return undefined;
+  }
+
+  private pickCurrency(...values: Array<number | undefined>): number | undefined {
+    for (const value of values) {
+      const normalized = this.normalizeCurrency(value);
+      if (normalized !== undefined) {
+        return normalized;
+      }
+    }
+    return undefined;
+  }
+
+  private sumCurrencies(values: Array<number | undefined>): number | undefined {
+    const normalizedValues = values
+      .map(value => this.normalizeCurrency(value))
+      .filter((value): value is number => value !== undefined);
+
+    if (!normalizedValues.length) {
+      return undefined;
+    }
+
+    const total = normalizedValues.reduce((acc, value) => acc + value, 0);
+    return Number(total.toFixed(2));
+  }
+
+  private normalizeRate(value: number | undefined): number | undefined {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value >= 0 ? value : 0;
+    }
+    return undefined;
+  }
+
+  private resolveRate(options: {
+    amount?: number;
+    base?: number;
+    fallbackRate?: number;
+    fallbackAmount?: number;
+    fallbackAmountBase?: number;
+  }): number {
+    const amount = this.normalizeCurrency(options.amount);
+    const base = this.normalizeCurrency(options.base);
+    if (amount !== undefined && base !== undefined && base > 0) {
+      const rate = amount / base;
+      if (Number.isFinite(rate) && rate >= 0) {
+        return rate;
+      }
+    }
+
+    const fallbackRate = this.normalizeRate(options.fallbackRate);
+    if (fallbackRate !== undefined) {
+      return fallbackRate;
+    }
+
+    const fallbackAmount = this.normalizeCurrency(options.fallbackAmount);
+    const fallbackBase = this.normalizeCurrency(options.fallbackAmountBase ?? options.base);
+    if (fallbackAmount !== undefined && fallbackBase !== undefined && fallbackBase > 0) {
+      const rate = fallbackAmount / fallbackBase;
+      if (Number.isFinite(rate) && rate >= 0) {
+        return rate;
+      }
+    }
+
+    return 0;
   }
 
   trackByItem = (_index: number, item: BudgetItem): string => this.getItemKey(item);
