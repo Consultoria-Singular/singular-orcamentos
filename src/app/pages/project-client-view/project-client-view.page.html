@@ -76,6 +76,12 @@
           <strong>{{ selectedTotalAmount() | currencyFormat }}</strong>
         </div>
         <ds-button
+          variant="ghost"
+          [disabled]="items().length === 0"
+          (buttonClick)="onExportCsv()">
+          Exportar CSV
+        </ds-button>
+        <ds-button
           variant="primary"
           [disabled]="cloning() || selectedCount() === 0"
           (buttonClick)="onGenerateQuote()">

@@ -28,6 +28,12 @@ export class ProjectClientViewPage implements OnInit {
   loading = signal<boolean>(false);
   error = signal<string | undefined>(undefined);
   cloning = signal<boolean>(false);
+  private readonly currencyFormatter = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 
   readonly selectedIds = signal<Set<string>>(new Set());
   readonly selectedCount = computed(() => this.selectedIds().size);
@@ -240,6 +246,31 @@ export class ProjectClientViewPage implements OnInit {
 
   trackByItem = (_index: number, item: BudgetItem): string => this.getItemKey(item);
 
+  onExportCsv(): void {
+    const items = this.items();
+    if (!items.length) {
+      window.alert('Nao ha itens para exportar.');
+      return;
+    }
+
+    const project = this.project();
+    const csvSeparator = ';';
+    const header = ['Épico', 'Item', 'Total'];
+    const body = items.map(item => [
+      this.getEpicName(item.epicId),
+      item.name ?? '',
+      this.formatCurrencyForCsv(this.getItemTotal(item))
+    ]);
+    const totalRow = ['Total geral', '', this.formatCurrencyForCsv(this.totalAmount())];
+    const csvRows = [header, ...body, totalRow];
+
+    const csvContent = csvRows
+      .map(row => row.map(value => this.escapeCsvValue(value)).join(csvSeparator))
+      .join('\r\n');
+
+    this.downloadCsv(`\uFEFF${csvContent}`, this.buildExportFileName(project?.name));
+  }
+
   onGenerateQuote(): void {
     if (this.cloning() || this.selectedIds().size === 0) {
       return;
@@ -273,5 +304,48 @@ export class ProjectClientViewPage implements OnInit {
         window.alert('Nao foi possivel gerar o orcamento.');
       }
     });
+  }
+
+  private formatCurrencyForCsv(value: number): string {
+    return this.currencyFormatter.format(value);
+  }
+
+  private escapeCsvValue(value: string): string {
+    const sanitized = value.replace(/"/g, '""');
+    return `"${sanitized}"`;
+  }
+
+  private downloadCsv(content: string, filename: string): void {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const navigatorWithSave = window.navigator as Navigator & {
+      msSaveOrOpenBlob?: (blob: Blob, defaultName?: string) => void;
+    };
+
+    if (typeof navigatorWithSave.msSaveOrOpenBlob === 'function') {
+      navigatorWithSave.msSaveOrOpenBlob(blob, filename);
+      return;
+    }
+
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  private buildExportFileName(projectName?: string | null): string {
+    const baseName = (projectName ?? 'orcamento')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+
+    const safeName = baseName || 'orcamento';
+    return `${safeName}-cliente.csv`;
   }
 }
