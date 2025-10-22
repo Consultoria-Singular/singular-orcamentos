@@ -1,0 +1,28 @@
+<nav class="top-toolbar" role="navigation" aria-label="Barra superior">
+  <div class="toolbar-section toolbar-section--left">
+    <a
+      routerLink="/projects"
+      routerLinkActive="is-active"
+      class="toolbar-link"
+      >Projetos</a
+    >
+    <a
+      routerLink="/users"
+      class="toolbar-link"
+      routerLinkActive="is-active"
+      >Usuarios</a
+    >
+  </div>
+  <div class="toolbar-section toolbar-section--right">
+    <span class="toolbar-user" [title]="userEmail() || 'Usuario nao identificado'">
+      Usuario: {{ userEmail() || '---' }}
+    </span>
+    <button
+      type="button"
+      class="toolbar-button"
+      aria-label="Sair"
+      (click)="onLogout()">
+      Sair
+    </button>
+  </div>
+</nav>
