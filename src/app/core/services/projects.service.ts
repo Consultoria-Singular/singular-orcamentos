@@ -46,8 +46,11 @@ export class ProjectsService {
     );
   }
 
-  cloneProjectItems(id: string, itemIds: string[]): Observable<Project> {
-    const body = { itemIds };
+  cloneProjectItems(id: string, payload: { itemIds: string[]; name?: string }): Observable<Project> {
+    const sanitizedName = payload.name?.trim();
+    const body = sanitizedName?.length
+      ? { itemIds: payload.itemIds, name: sanitizedName }
+      : { itemIds: payload.itemIds };
     return this.api.post<ProjectDto>(`/projects/${id}/clone-items`, body).pipe(
       tap(dto => console.log('[ProjectsService] POST /projects/' + id + '/clone-items response', dto)),
       map(dto => this.buildProject(dto, { preferCalculatedTotal: true }))

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BudgetItem } from '../../core/models/budget-item.model';
 import { Project } from '../../core/models/project.model';
@@ -8,6 +8,7 @@ import { ToolbarComponent } from '../../components/shared/toolbar.component';
 import { DsButtonComponent } from '../../components/ds/ds-button.component';
 import { CurrencyFormatPipe } from '../../utils/pipes/currency-format.pipe';
 import { calculateBudgetItemCost } from '../../utils/cost.utils';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-project-client-view',
@@ -16,18 +17,38 @@ import { calculateBudgetItemCost } from '../../utils/cost.utils';
   templateUrl: './project-client-view.page.html',
   styleUrls: ['./project-client-view.page.scss']
 })
-export class ProjectClientViewPage implements OnInit {
+export class ProjectClientViewPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly projectsService = inject(ProjectsService);
 
-  readonly projectId = this.route.snapshot.paramMap.get('id') ?? '';
+  private readonly routeParamMap = toSignal(this.route.paramMap, { initialValue: this.route.snapshot.paramMap });
+  readonly projectId = computed(() => this.routeParamMap().get('id') ?? '');
 
   project = signal<Project | null>(null);
   items = signal<BudgetItem[]>([]);
   loading = signal<boolean>(false);
   error = signal<string | undefined>(undefined);
   cloning = signal<boolean>(false);
+  quoteModalOpen = signal<boolean>(false);
+  quoteProjectName = signal<string>('');
+  quoteFormError = signal<string | undefined>(undefined);
+  private lastLoadedProjectId?: string;
+  private readonly projectLoader = effect(
+    () => {
+      const currentId = this.projectId().trim();
+      if (!currentId.length) {
+        this.project.set(null);
+        this.items.set([]);
+        return;
+      }
+      if (currentId === this.lastLoadedProjectId) {
+        return;
+      }
+      this.loadProject(currentId);
+    },
+    { allowSignalWrites: true }
+  );
   private readonly currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -53,15 +74,19 @@ export class ProjectClientViewPage implements OnInit {
     }, 0);
   });
 
-  ngOnInit(): void {
-    this.loadProject();
-  }
+  loadProject(id: string = this.projectId()): void {
+    const normalizedId = id?.trim() ?? '';
+    if (!normalizedId.length) {
+      this.project.set(null);
+      this.items.set([]);
+      return;
+    }
 
-  loadProject(): void {
+    this.lastLoadedProjectId = normalizedId;
     this.loading.set(true);
     this.error.set(undefined);
 
-    this.projectsService.getProject(this.projectId).subscribe({
+    this.projectsService.getProject(normalizedId).subscribe({
       next: project => {
         this.project.set(project);
         const items = Array.isArray(project.budgetItems) ? project.budgetItems : [];
@@ -276,34 +301,76 @@ export class ProjectClientViewPage implements OnInit {
       return;
     }
 
-    const project = this.project();
-    if (!project) {
+    if (!this.project()) {
       return;
     }
 
-    const selectedItemIds = this.items()
-      .filter(item => this.selectedIds().has(this.getItemKey(item)) && item.id)
-      .map(item => item.id as string);
-    console.log('[ProjectClientView] selected item ids', selectedItemIds);
-
+    const selectedItemIds = this.getSelectedItemIds();
     if (!selectedItemIds.length) {
       window.alert('Selecione pelo menos um item para gerar o orcamento.');
       return;
     }
 
+    this.quoteFormError.set(undefined);
+    this.quoteProjectName.set(this.buildCloneNameSuggestion());
+    this.quoteModalOpen.set(true);
+  }
+
+  onCancelGenerateQuote(): void {
+    if (this.cloning()) {
+      return;
+    }
+    this.quoteModalOpen.set(false);
+    this.quoteProjectName.set('');
+    this.quoteFormError.set(undefined);
+  }
+
+  onConfirmGenerateQuote(): void {
+    if (this.cloning()) {
+      return;
+    }
+
+    if (!this.project()) {
+      return;
+    }
+
+    const selectedItemIds = this.getSelectedItemIds();
+    if (!selectedItemIds.length) {
+      this.quoteModalOpen.set(false);
+      window.alert('Selecione pelo menos um item para gerar o orcamento.');
+      return;
+    }
+
+    const trimmedName = this.quoteProjectName().trim();
+    if (!trimmedName.length) {
+      this.quoteFormError.set('Informe um nome para o novo projeto.');
+      return;
+    }
+
+    this.quoteFormError.set(undefined);
     this.cloning.set(true);
-    this.projectsService.cloneProjectItems(this.projectId, selectedItemIds).subscribe({
+    this.projectsService.cloneProjectItems(this.projectId(), { itemIds: selectedItemIds, name: trimmedName }).subscribe({
       next: newProject => {
         this.cloning.set(false);
+        this.quoteModalOpen.set(false);
+        this.quoteProjectName.set('');
+        this.quoteFormError.set(undefined);
         window.alert('Orcamento gerado com sucesso!');
-        this.router.navigate(['/projects', newProject.id, 'items']);
+        this.router.navigate(['/projects', newProject.id, 'client-view']);
       },
       error: err => {
         console.error('[ProjectClientView] clone items failed', err);
         this.cloning.set(false);
-        window.alert('Nao foi possivel gerar o orcamento.');
+        this.quoteFormError.set('Nao foi possivel gerar o orcamento. Tente novamente.');
       }
     });
+  }
+
+  onQuoteProjectNameChange(value: string): void {
+    this.quoteProjectName.set(value);
+    if (value.trim().length > 0 && this.quoteFormError()) {
+      this.quoteFormError.set(undefined);
+    }
   }
 
   private formatCurrencyForCsv(value: number): string {
@@ -347,5 +414,19 @@ export class ProjectClientViewPage implements OnInit {
 
     const safeName = baseName || 'orcamento';
     return `${safeName}-cliente.csv`;
+  }
+
+  private getSelectedItemIds(): string[] {
+    return this.items()
+      .filter(item => this.selectedIds().has(this.getItemKey(item)) && typeof item.id === 'string' && item.id.trim().length > 0)
+      .map(item => item.id as string);
+  }
+
+  private buildCloneNameSuggestion(): string {
+    const projectName = this.project()?.name?.trim();
+    if (projectName?.length) {
+      return `${projectName} - Cliente`;
+    }
+    return '';
   }
 }

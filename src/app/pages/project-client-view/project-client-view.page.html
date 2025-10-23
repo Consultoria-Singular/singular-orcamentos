@@ -97,4 +97,33 @@
       </div>
     </ng-template>
   </section>
+
+  <div *ngIf="quoteModalOpen()" class="quote-modal__backdrop" role="presentation">
+    <div
+      class="quote-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="quote-modal-title"
+      aria-describedby="quote-modal-description">
+      <h2 id="quote-modal-title">Gerar orcamento</h2>
+      <p id="quote-modal-description">Insira o nome do novo projeto para continuar.</p>
+      <label class="quote-modal__label" for="quote-modal-name">Nome do projeto</label>
+      <input
+        id="quote-modal-name"
+        type="text"
+        class="quote-modal__input"
+        autocomplete="off"
+        [value]="quoteProjectName()"
+        [disabled]="cloning()"
+        (input)="onQuoteProjectNameChange($any($event.target).value)"
+        placeholder="Ex.: Projeto ACME - Cliente" />
+      <p *ngIf="quoteFormError()" class="quote-modal__error">{{ quoteFormError() }}</p>
+      <div class="quote-modal__actions">
+        <ds-button variant="ghost" [disabled]="cloning()" (buttonClick)="onCancelGenerateQuote()">Cancelar</ds-button>
+        <ds-button variant="primary" [disabled]="cloning()" (buttonClick)="onConfirmGenerateQuote()">
+          {{ cloning() ? 'Gerando...' : 'Confirmar' }}
+        </ds-button>
+      </div>
+    </div>
+  </div>
 </main>
