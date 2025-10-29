@@ -122,6 +122,77 @@
   font-weight: var(--font-weight-semibold);
 }
 
+.client-actions--share {
+  justify-content: flex-start;
+}
+
+.shared-epic-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.shared-epic {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-1, #ffffff);
+  overflow: hidden;
+}
+
+.shared-epic__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface-2, #f3f4f6);
+  font-weight: var(--font-weight-semibold);
+}
+
+.shared-epic__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+
+.shared-epic__item {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  gap: var(--space-3);
+  border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+.shared-epic__item .item-name {
+  color: var(--color-muted);
+}
+
+.shared-epic__item .item-total {
+  font-weight: var(--font-weight-semibold);
+}
+
+.share-feedback {
+  margin: var(--space-2) 0 0;
+  color: var(--color-muted, #6b7280);
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.share-error {
+  margin: var(--space-1) 0 0;
+  color: var(--color-danger, #b91c1c);
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.share-header {
+  margin-bottom: var(--space-4);
+}
+
+.share-header h1 {
+  margin: 0;
+  font-size: var(--text-xl, 1.5rem);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
 @media (max-width: 720px) {
   .client-table th,
   .client-table td {

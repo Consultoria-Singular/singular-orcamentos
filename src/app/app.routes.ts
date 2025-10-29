@@ -52,9 +52,19 @@ export const appRoutes: Routes = [
     loadComponent: () => import('./pages/item-form/item-form.page').then(m => m.ItemFormPage)
   },
   {
+    path: 'client-view/:shareId',
+    loadComponent: () => import('./pages/project-client-view/project-client-view.page').then(m => m.ProjectClientViewPage),
+    data: { shareMode: true }
+  },
+  {
     path: 'projects/:id/client-view',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/project-client-view/project-client-view.page').then(m => m.ProjectClientViewPage)
+  },
+  {
+    path: 'client-view/shared/:shareId',
+    loadComponent: () => import('./pages/project-client-view/project-client-view.page').then(m => m.ProjectClientViewPage),
+    data: { shareMode: true }
   },
   {
     path: '**',

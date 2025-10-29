@@ -6,6 +6,23 @@ import { Project } from '../models/project.model';
 import { adaptProjectDto, adaptProjectToDto, ProjectDto } from '../../services/adapters';
 import { calculateProjectTotal } from '../../utils/cost.utils';
 
+type ProjectShareLinkDto = {
+  shareId?: string;
+  id?: string;
+  token?: string;
+  shareToken?: string;
+  url?: string;
+  shareUrl?: string;
+  link?: string;
+};
+
+type SharedProjectResponse = {
+  project?: ProjectDto | null;
+  epics?: ProjectDto['epics'];
+  budgetItems?: ProjectDto['budgetItems'];
+  totals?: ProjectDto['totals'];
+};
+
 @Injectable({ providedIn: 'root' })
 export class ProjectsService {
   private readonly api = inject(ApiService);
@@ -21,6 +38,30 @@ export class ProjectsService {
     return this.api.get<ProjectDto>(`/projects/${id}`).pipe(
       tap(dto => console.log('[ProjectsService] GET /projects/' + id + ' DTO', dto)),
       map(dto => this.buildProject(dto))
+    );
+  }
+
+  getSharedProject(shareId: string): Observable<Project> {
+    return this.api.get<ProjectDto | SharedProjectResponse>(`/projects/shared/${shareId}`, {
+      headers: { 'X-Skip-Auth': 'true' },
+      withCredentials: false
+    }).pipe(
+      tap(dto => console.log('[ProjectsService] GET /projects/shared/' + shareId + ' DTO', dto)),
+      map(dto => this.buildProject(this.normalizeSharedProjectResponse(dto)))
+    );
+  }
+
+  createShareLink(id: string): Observable<{ shareId: string; shareUrl?: string }> {
+    return this.api.post<ProjectShareLinkDto>(`/projects/${id}/share`, {}).pipe(
+      tap(response => console.log('[ProjectsService] POST /projects/' + id + '/share response', response)),
+      map(response => {
+        const shareId = this.extractShareId(response);
+        if (!shareId) {
+          throw new Error('Invalid response: share id not found');
+        }
+        const shareUrl = this.extractShareUrl(response);
+        return { shareId, shareUrl };
+      })
     );
   }
 
@@ -59,6 +100,59 @@ export class ProjectsService {
 
   deleteProject(id: string): Observable<void> {
     return this.api.delete<void>(`/projects/${id}`);
+  }
+
+  private extractShareId(response?: ProjectShareLinkDto | null): string | undefined {
+    if (!response) {
+      return undefined;
+    }
+    const candidates = [
+      response.shareId,
+      response.shareToken,
+      response.token,
+      response.id
+    ];
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string') {
+        const trimmed = candidate.trim();
+        if (trimmed.length > 0) {
+          return trimmed;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  private extractShareUrl(response?: ProjectShareLinkDto | null): string | undefined {
+    if (!response) {
+      return undefined;
+    }
+    const candidates = [response.shareUrl, response.url, response.link];
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string') {
+        const trimmed = candidate.trim();
+        if (trimmed.length > 0) {
+          return trimmed;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  private normalizeSharedProjectResponse(response: ProjectDto | SharedProjectResponse | null | undefined): ProjectDto {
+    if (!response) {
+      throw new Error('Empty shared project response');
+    }
+
+    const wrapper = response as SharedProjectResponse;
+    const baseProject = (wrapper.project ?? response) as ProjectDto;
+
+    return {
+      ...baseProject,
+      epics: wrapper.epics ?? baseProject.epics,
+      budgetItems: wrapper.budgetItems ?? baseProject.budgetItems,
+      totals: wrapper.totals ?? baseProject.totals
+    };
   }
 
   private buildProject(dto: ProjectDto, options?: { preferCalculatedTotal?: boolean }): Project {

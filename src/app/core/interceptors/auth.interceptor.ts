@@ -16,13 +16,17 @@ export class AuthInterceptor implements HttpInterceptor {
     const session = this.authStore.snapshot();
 
     let headers = req.headers;
-    if (session?.token && !headers.has('Authorization')) {
+    const shouldSkipAuth = headers.has('X-Skip-Auth');
+
+    if (shouldSkipAuth) {
+      headers = headers.delete('X-Skip-Auth');
+    } else if (session?.token && !headers.has('Authorization')) {
       headers = headers.set('Authorization', `Bearer ${session.token}`);
     }
 
     const authenticatedRequest = req.clone({
       headers,
-      withCredentials: true
+      withCredentials: shouldSkipAuth ? req.withCredentials : true
     });
 
     return next.handle(authenticatedRequest);
