@@ -1,0 +1,278 @@
+<main class="container layout-column users-page">
+  <header class="users-header">
+    <div>
+      <h1>Controle de Usuarios</h1>
+      <p class="users-subtitle">Gerencie os acessos da plataforma Singular Orcamentos.</p>
+    </div>
+
+    <ds-button
+      variant="primary"
+      *ngIf="canManageUsers()"
+      (buttonClick)="openCreateModal()">
+      Novo usuario
+    </ds-button>
+  </header>
+
+  <div class="status-message status-message--info" *ngIf="loading()">
+    Carregando usuarios...
+  </div>
+
+  <div class="status-message status-message--error" *ngIf="!loading() && error()">
+    {{ error() }}
+  </div>
+
+  <div class="status-message status-message--warning" *ngIf="permissionDenied() && !loading()">
+    Seu perfil nao possui permissao para alterar usuarios.
+  </div>
+
+  <div class="table-wrapper" *ngIf="!loading() && !error() && users().length">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Funcao</th>
+          <th>Status</th>
+          <th class="column-actions">Acoes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of users(); trackBy: trackByUserId">
+          <td>{{ user.email }}</td>
+          <td>{{ user.role }}</td>
+          <td>
+            <span class="badge" [class.badge--active]="user.isActive" [class.badge--inactive]="!user.isActive">
+              {{ user.isActive ? 'Ativo' : 'Inativo' }}
+            </span>
+          </td>
+          <td>
+            <div class="table-actions" *ngIf="canManageUsers(); else noActions">
+              <ds-button
+                size="sm"
+                variant="secondary"
+                (buttonClick)="openEditModal(user.id)">
+                Editar
+              </ds-button>
+              <ds-button
+                size="sm"
+                variant="danger"
+                (buttonClick)="openDeleteModal(user)">
+                Excluir
+              </ds-button>
+            </div>
+            <ng-template #noActions>
+              <span class="actions-placeholder">-</span>
+            </ng-template>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading() && !error() && !users().length">
+    Nenhum usuario cadastrado ate o momento.
+  </div>
+</main>
+
+<!-- Create Modal -->
+<section
+  class="modal-backdrop"
+  *ngIf="showCreateModal()"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="create-user-title">
+  <div class="modal-card">
+    <header class="modal-header">
+      <h2 id="create-user-title">Novo usuario</h2>
+      <button type="button" class="modal-close" aria-label="Fechar" (click)="closeCreateModal()">×</button>
+    </header>
+
+    <form class="modal-form" [formGroup]="createForm" (ngSubmit)="onSubmitCreate()">
+      <label class="form-field">
+        <span class="form-label">E-mail</span>
+        <input
+          type="email"
+          formControlName="email"
+          autocomplete="off"
+          placeholder="nome@empresa.com"
+          [class.has-error]="createForm.controls.email.invalid && createForm.controls.email.touched" />
+        <small *ngIf="createForm.controls.email.hasError('required') && createForm.controls.email.touched">
+          Informe um e-mail.
+        </small>
+        <small *ngIf="createForm.controls.email.hasError('email') && createForm.controls.email.touched">
+          Informe um e-mail valido.
+        </small>
+        <small *ngIf="createForm.controls.email.hasError('emailInUse')">
+          Este e-mail ja esta em uso.
+        </small>
+      </label>
+
+      <label class="form-field">
+        <span class="form-label">Senha</span>
+        <input
+          type="password"
+          formControlName="password"
+          autocomplete="new-password"
+          placeholder="Minimo de 6 caracteres"
+          [class.has-error]="createForm.controls.password.invalid && createForm.controls.password.touched" />
+        <small *ngIf="createForm.controls.password.hasError('required') && createForm.controls.password.touched">
+          Informe uma senha.
+        </small>
+        <small *ngIf="createForm.controls.password.hasError('minlength') && createForm.controls.password.touched">
+          A senha deve conter pelo menos 6 caracteres.
+        </small>
+      </label>
+
+      <label class="form-field">
+        <span class="form-label">Funcao</span>
+        <select
+          formControlName="role"
+          [class.has-error]="createForm.controls.role.invalid && createForm.controls.role.touched">
+          <option value="ADMIN">ADMIN</option>
+          <option value="VISUALIZADOR">VISUALIZADOR</option>
+          <option value="FINANCEIRO">FINANCEIRO</option>
+        </select>
+        <small *ngIf="createForm.controls.role.invalid && createForm.controls.role.touched">
+          Selecione uma funcao.
+        </small>
+      </label>
+
+      <div class="modal-actions">
+        <ds-button
+          type="button"
+          variant="ghost"
+          (buttonClick)="closeCreateModal()">
+          Cancelar
+        </ds-button>
+        <ds-button
+          type="submit"
+          [disabled]="creating()">
+          {{ creating() ? 'Salvando...' : 'Criar usuario' }}
+        </ds-button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- Edit Modal -->
+<section
+  class="modal-backdrop"
+  *ngIf="showEditModal()"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="edit-user-title">
+  <div class="modal-card">
+    <header class="modal-header">
+      <h2 id="edit-user-title">Editar usuario</h2>
+      <button type="button" class="modal-close" aria-label="Fechar" (click)="closeEditModal()">×</button>
+    </header>
+
+    <div *ngIf="loadingUserDetails(); else editFormTpl" class="modal-loading">
+      Carregando dados do usuario...
+    </div>
+
+    <ng-template #editFormTpl>
+      <form class="modal-form" [formGroup]="editForm" (ngSubmit)="onSubmitEdit()">
+        <label class="form-field">
+          <span class="form-label">E-mail</span>
+          <input
+            type="email"
+            formControlName="email"
+            autocomplete="off"
+            placeholder="nome@empresa.com"
+            [class.has-error]="editForm.controls.email?.invalid && editForm.controls.email?.touched" />
+          <small *ngIf="editForm.controls.email?.hasError('required') && editForm.controls.email?.touched">
+            Informe um e-mail.
+          </small>
+          <small *ngIf="editForm.controls.email?.hasError('email') && editForm.controls.email?.touched">
+            Informe um e-mail valido.
+          </small>
+          <small *ngIf="editForm.controls.email?.hasError('emailInUse')">
+            Este e-mail ja esta em uso.
+          </small>
+        </label>
+
+        <label class="form-field">
+          <span class="form-label">Senha (opcional)</span>
+          <input
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+            placeholder="Informe nova senha se desejar alterar"
+            [class.has-error]="editForm.controls.password?.invalid && editForm.controls.password?.touched" />
+          <small *ngIf="editForm.controls.password?.hasError('minlength') && editForm.controls.password?.touched">
+            A senha deve conter pelo menos 6 caracteres.
+          </small>
+        </label>
+
+        <label class="form-field">
+          <span class="form-label">Funcao</span>
+          <select
+            formControlName="role"
+            [class.has-error]="editForm.controls.role?.invalid && editForm.controls.role?.touched">
+            <option value="ADMIN">ADMIN</option>
+            <option value="VISUALIZADOR">VISUALIZADOR</option>
+            <option value="FINANCEIRO">FINANCEIRO</option>
+          </select>
+          <small *ngIf="editForm.controls.role?.invalid && editForm.controls.role?.touched">
+            Selecione uma funcao.
+          </small>
+        </label>
+
+        <label class="form-field form-field--inline">
+          <input type="checkbox" formControlName="isActive" />
+          <span>Usuario ativo</span>
+        </label>
+
+        <div class="modal-actions">
+          <ds-button
+            type="button"
+            variant="ghost"
+            (buttonClick)="closeEditModal()">
+            Cancelar
+          </ds-button>
+          <ds-button
+            type="submit"
+            [disabled]="updating()">
+            {{ updating() ? 'Salvando...' : 'Salvar alteracoes' }}
+          </ds-button>
+        </div>
+      </form>
+    </ng-template>
+  </div>
+</section>
+
+<!-- Delete Modal -->
+<section
+  class="modal-backdrop"
+  *ngIf="showDeleteModal()"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="delete-user-title">
+  <div class="modal-card">
+    <header class="modal-header">
+      <h2 id="delete-user-title">Remover usuario</h2>
+      <button type="button" class="modal-close" aria-label="Fechar" (click)="closeDeleteModal()">×</button>
+    </header>
+
+    <div class="modal-body">
+      Tem certeza que deseja excluir o usuario
+      <strong>{{ deletingUser()?.email }}</strong>?
+    </div>
+
+    <div class="modal-actions">
+      <ds-button
+        type="button"
+        variant="ghost"
+        (buttonClick)="closeDeleteModal()">
+        Cancelar
+      </ds-button>
+      <ds-button
+        type="button"
+        variant="danger"
+        [disabled]="deleting()"
+        (buttonClick)="confirmDelete()">
+        {{ deleting() ? 'Excluindo...' : 'Excluir usuario' }}
+      </ds-button>
+    </div>
+  </div>
+</section>

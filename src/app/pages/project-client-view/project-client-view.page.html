@@ -1,10 +1,14 @@
 <main class="container layout-column">
   <app-toolbar
+    *ngIf="!shareMode"
     [title]="project()?.name || 'Visualizacao cliente'"
     [breadcrumbs]="[{ label: 'Projetos', link: '/projects' }, { label: project()?.name || 'Orcamento para cliente' }]"
     [hasProjectedActions]="false"
     [showThemeToggle]="true">
   </app-toolbar>
+  <header *ngIf="shareMode" class="share-header">
+    <h1>{{ project()?.name || 'Orcamento do projeto' }}</h1>
+  </header>
 
   <section *ngIf="loading()" class="loading-state">
     <span class="loading-spinner"></span>
@@ -13,12 +17,12 @@
 
   <section *ngIf="error() && !loading()" class="alert" role="alert">
     {{ error() }}
-    <div class="table-actions">
+    <div class="table-actions" *ngIf="!shareMode">
       <ds-button variant="ghost" (buttonClick)="loadProject()">Tentar novamente</ds-button>
     </div>
   </section>
 
-  <section *ngIf="!loading() && !error()" class="client-view">
+  <section *ngIf="!loading() && !error()" class="client-view" [class.client-view--share]="shareMode">
     <div class="project-summary project-summary--top">
       <section class="project-summary__card project-summary__card--overview">
         <h4>Total do projeto</h4>
@@ -26,12 +30,12 @@
           <span>Total</span>
           <span>{{ totalAmount() | currencyFormat }}</span>
         </div>
-        <div class="project-summary__row">
+        <div class="project-summary__row" *ngIf="!shareMode">
           <span>Selecionado</span>
           <span>{{ selectedTotalAmount() | currencyFormat }}</span>
         </div>
       </section>
-      <section class="project-summary__card project-summary__card--actions">
+      <section *ngIf="!shareMode" class="project-summary__card project-summary__card--actions">
         <h4>Selecao</h4>
         <label class="select-all">
           <input type="checkbox" [checked]="allSelected()" (change)="onToggleSelectAll($event.target.checked)" />
@@ -41,54 +45,106 @@
       </section>
     </div>
 
-    <div *ngIf="items().length; else emptyState" class="table-wrapper" aria-live="polite">
-      <table class="client-table">
-        <thead>
-          <tr>
-            <th>Epico</th>
-            <th>Total</th>
-            <th class="col-actions">
-              <input type="checkbox" [checked]="allSelected()" (change)="onToggleSelectAll($event.target.checked)" aria-label="Selecionar todos" />
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of items(); trackBy: trackByItem">
-            <td>
-              <span class="epic-name">{{ getEpicName(item.epicId) }}</span>
-              <span class="item-name">{{ item.name }}</span>
-            </td>
-            <td class="cell-total">{{ getItemTotal(item) | currencyFormat }}</td>
-            <td class="col-actions">
-              <input
-                type="checkbox"
-                [checked]="isSelected(item)"
-                (change)="toggleSelection(item, $event.target.checked)"
-                aria-label="Selecionar item {{ item.name }}" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="client-actions">
-        <div class="totals">
-          <span>Total selecionado</span>
-          <strong>{{ selectedTotalAmount() | currencyFormat }}</strong>
+    <ng-container *ngIf="items().length; else emptyState">
+      <ng-container *ngIf="shareMode; else interactiveContent">
+        <div class="shared-epic-list" aria-live="polite">
+          <section *ngFor="let epic of itemsByEpic()" class="shared-epic">
+            <header class="shared-epic__header">
+              <span class="epic-name">{{ epic.epicName }}</span>
+              <span class="epic-total">{{ epic.total | currencyFormat }}</span>
+            </header>
+            <ul class="shared-epic__items">
+              <li *ngFor="let entry of epic.items" class="shared-epic__item">
+                <span class="item-name">{{ entry.item.name }}</span>
+                <span class="item-total">{{ entry.total | currencyFormat }}</span>
+              </li>
+            </ul>
+          </section>
         </div>
-        <ds-button
-          variant="ghost"
-          [disabled]="items().length === 0"
-          (buttonClick)="onExportCsv()">
-          Exportar CSV
-        </ds-button>
-        <ds-button
-          variant="primary"
-          [disabled]="cloning() || selectedCount() === 0"
-          (buttonClick)="onGenerateQuote()">
-          {{ cloning() ? 'Gerando...' : 'Gerar orcamento' }}
-        </ds-button>
+        <div class="client-actions client-actions--share">
+          <div class="totals">
+            <span>Total do projeto</span>
+            <strong>{{ totalAmount() | currencyFormat }}</strong>
+          </div>
+          <ds-button
+            variant="ghost"
+            [disabled]="items().length === 0"
+            (buttonClick)="onExportCsv()">
+            Exportar CSV
+          </ds-button>
+          <ds-button
+            variant="primary"
+            [disabled]="shareGenerating() || !project()"
+            (buttonClick)="onShare()">
+            {{ shareGenerating() ? 'Gerando...' : 'Compartilhar' }}
+          </ds-button>
+        </div>
+        <ng-container *ngTemplateOutlet="shareMessages"></ng-container>
+      </ng-container>
+    </ng-container>
+
+    <ng-template #interactiveContent>
+      <div class="table-wrapper" aria-live="polite">
+        <table class="client-table">
+          <thead>
+            <tr>
+              <th>Epico</th>
+              <th>Total</th>
+              <th class="col-actions">
+                <input type="checkbox" [checked]="allSelected()" (change)="onToggleSelectAll($event.target.checked)" aria-label="Selecionar todos" />
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of items(); trackBy: trackByItem">
+              <td>
+                <span class="epic-name">{{ getEpicName(item.epicId) }}</span>
+                <span class="item-name">{{ item.name }}</span>
+              </td>
+              <td class="cell-total">{{ getItemTotal(item) | currencyFormat }}</td>
+              <td class="col-actions">
+                <input
+                  type="checkbox"
+                  [checked]="isSelected(item)"
+                  (change)="toggleSelection(item, $event.target.checked)"
+                  aria-label="Selecionar item {{ item.name }}" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="client-actions">
+          <div class="totals">
+            <span>Total selecionado</span>
+            <strong>{{ selectedTotalAmount() | currencyFormat }}</strong>
+          </div>
+          <ds-button
+            variant="ghost"
+            [disabled]="items().length === 0"
+            (buttonClick)="onExportCsv()">
+            Exportar CSV
+          </ds-button>
+          <ds-button
+            variant="secondary"
+            [disabled]="shareGenerating() || !project()"
+            (buttonClick)="onShare()">
+            {{ shareGenerating() ? 'Gerando...' : 'Compartilhar' }}
+          </ds-button>
+          <ds-button
+            variant="primary"
+            [disabled]="cloning() || selectedCount() === 0"
+            (buttonClick)="onGenerateQuote()">
+            {{ cloning() ? 'Gerando...' : 'Gerar orcamento' }}
+          </ds-button>
+        </div>
+        <ng-container *ngTemplateOutlet="shareMessages"></ng-container>
       </div>
-    </div>
+    </ng-template>
+
+    <ng-template #shareMessages>
+      <p *ngIf="shareFeedback()" class="share-feedback">{{ shareFeedback() }}</p>
+      <p *ngIf="shareError()" class="share-error">{{ shareError() }}</p>
+    </ng-template>
 
     <ng-template #emptyState>
       <div class="sg-empty-state">
@@ -97,4 +153,33 @@
       </div>
     </ng-template>
   </section>
+
+  <div *ngIf="!shareMode && quoteModalOpen()" class="quote-modal__backdrop" role="presentation">
+    <div
+      class="quote-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="quote-modal-title"
+      aria-describedby="quote-modal-description">
+      <h2 id="quote-modal-title">Gerar orcamento</h2>
+      <p id="quote-modal-description">Insira o nome do novo projeto para continuar.</p>
+      <label class="quote-modal__label" for="quote-modal-name">Nome do projeto</label>
+      <input
+        id="quote-modal-name"
+        type="text"
+        class="quote-modal__input"
+        autocomplete="off"
+        [value]="quoteProjectName()"
+        [disabled]="cloning()"
+        (input)="onQuoteProjectNameChange($any($event.target).value)"
+        placeholder="Ex.: Projeto ACME - Cliente" />
+      <p *ngIf="quoteFormError()" class="quote-modal__error">{{ quoteFormError() }}</p>
+      <div class="quote-modal__actions">
+        <ds-button variant="ghost" [disabled]="cloning()" (buttonClick)="onCancelGenerateQuote()">Cancelar</ds-button>
+        <ds-button variant="primary" [disabled]="cloning()" (buttonClick)="onConfirmGenerateQuote()">
+          {{ cloning() ? 'Gerando...' : 'Confirmar' }}
+        </ds-button>
+      </div>
+    </div>
+  </div>
 </main>

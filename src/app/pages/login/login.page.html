@@ -1,0 +1,46 @@
+<div class="login-page">
+  <div class="login-card">
+    <h1 class="login-title">Singular Orçamentos</h1>
+    <p class="login-subtitle">Entre com sua conta para continuar.</p>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <label class="form-field">
+        <span class="form-label">E-mail</span>
+        <input
+          type="email"
+          formControlName="email"
+          autocomplete="username"
+          placeholder="nome@empresa.com"
+          [class.has-error]="form.controls.email.invalid && form.controls.email.touched" />
+        <small *ngIf="form.controls.email.invalid && form.controls.email.touched">
+          Informe um e-mail valido.
+        </small>
+      </label>
+
+      <label class="form-field">
+        <span class="form-label">Senha</span>
+        <input
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+          placeholder="Digite sua senha"
+          [class.has-error]="form.controls.password.invalid && form.controls.password.touched" />
+        <small *ngIf="form.controls.password.invalid && form.controls.password.touched">
+          Informe sua senha.
+        </small>
+      </label>
+
+      <div class="form-error" *ngIf="errorMessage() as message">
+        {{ message }}
+      </div>
+
+      <ds-button
+        type="submit"
+        [disabled]="isSubmitDisabled()"
+        [fullWidth]="true">
+        <span *ngIf="loading(); else enterLabel">Entrando...</span>
+        <ng-template #enterLabel>Entrar</ng-template>
+      </ds-button>
+    </form>
+  </div>
+</div>
