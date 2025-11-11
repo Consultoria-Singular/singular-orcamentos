@@ -1,21 +1,33 @@
-import { CommonModule, DOCUMENT } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { BudgetItem } from '../../core/models/budget-item.model';
-import { DEFAULT_PROJECT_STATUS, Project, getProjectStatusLabel } from '../../core/models/project.model';
-import { ProjectsService } from '../../core/services/projects.service';
-import { ToolbarComponent } from '../../components/shared/toolbar.component';
-import { DsButtonComponent } from '../../components/ds/ds-button.component';
-import { CurrencyFormatPipe } from '../../utils/pipes/currency-format.pipe';
-import { calculateBudgetItemCost } from '../../utils/cost.utils';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { CommonModule, DOCUMENT } from "@angular/common";
+import { Component, computed, effect, inject, signal } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { BudgetItem } from "../../core/models/budget-item.model";
+import {
+  DEFAULT_PROJECT_STATUS,
+  Project,
+  getProjectStatusLabel,
+} from "../../core/models/project.model";
+import { ProjectsService } from "../../core/services/projects.service";
+import {
+  ToolbarBreadcrumb,
+  ToolbarComponent,
+} from "../../components/shared/toolbar.component";
+import { DsButtonComponent } from "../../components/ds/ds-button.component";
+import { CurrencyFormatPipe } from "../../utils/pipes/currency-format.pipe";
+import { calculateBudgetItemCost } from "../../utils/cost.utils";
+import { toSignal } from "@angular/core/rxjs-interop";
 
 @Component({
-  selector: 'app-project-client-view',
+  selector: "app-project-client-view",
   standalone: true,
-  imports: [CommonModule, ToolbarComponent, DsButtonComponent, CurrencyFormatPipe],
-  templateUrl: './project-client-view.page.html',
-  styleUrls: ['./project-client-view.page.scss']
+  imports: [
+    CommonModule,
+    ToolbarComponent,
+    DsButtonComponent,
+    CurrencyFormatPipe,
+  ],
+  templateUrl: "./project-client-view.page.html",
+  styleUrls: ["./project-client-view.page.scss"],
 })
 export class ProjectClientViewPage {
   private readonly route = inject(ActivatedRoute);
@@ -23,11 +35,19 @@ export class ProjectClientViewPage {
   private readonly projectsService = inject(ProjectsService);
   private readonly document = inject(DOCUMENT);
 
-  readonly shareMode = Boolean(this.route.snapshot.data?.['shareMode']);
-  private readonly routeParamMap = toSignal(this.route.paramMap, { initialValue: this.route.snapshot.paramMap });
-  readonly projectId = computed(() => this.shareMode ? '' : (this.routeParamMap().get('id') ?? ''));
-  readonly shareAccessId = computed(() => this.shareMode ? (this.routeParamMap().get('shareId') ?? '') : '');
-  private readonly activeResourceId = computed(() => (this.shareMode ? this.shareAccessId() : this.projectId()) ?? '');
+  readonly shareMode = Boolean(this.route.snapshot.data?.["shareMode"]);
+  private readonly routeParamMap = toSignal(this.route.paramMap, {
+    initialValue: this.route.snapshot.paramMap,
+  });
+  readonly projectId = computed(() =>
+    this.shareMode ? "" : this.routeParamMap().get("id") ?? ""
+  );
+  readonly shareAccessId = computed(() =>
+    this.shareMode ? this.routeParamMap().get("shareId") ?? "" : ""
+  );
+  private readonly activeResourceId = computed(
+    () => (this.shareMode ? this.shareAccessId() : this.projectId()) ?? ""
+  );
 
   project = signal<Project | null>(null);
   readonly defaultStatus = DEFAULT_PROJECT_STATUS;
@@ -48,7 +68,7 @@ export class ProjectClientViewPage {
   error = signal<string | undefined>(undefined);
   cloning = signal<boolean>(false);
   quoteModalOpen = signal<boolean>(false);
-  quoteProjectName = signal<string>('');
+  quoteProjectName = signal<string>("");
   quoteFormError = signal<string | undefined>(undefined);
   shareGenerating = signal<boolean>(false);
   shareLink = signal<string | undefined>(undefined);
@@ -57,7 +77,7 @@ export class ProjectClientViewPage {
   private lastLoadedResourceId?: string;
   private readonly projectLoader = effect(
     () => {
-      const currentId = (this.activeResourceId() ?? '').trim();
+      const currentId = (this.activeResourceId() ?? "").trim();
       if (!currentId.length) {
         this.project.set(null);
         this.items.set([]);
@@ -75,16 +95,38 @@ export class ProjectClientViewPage {
     },
     { allowSignalWrites: true }
   );
-  private readonly currencyFormatter = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
+  private readonly currencyFormatter = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   });
 
   readonly selectedIds = signal<Set<string>>(new Set());
   readonly selectedCount = computed(() => this.selectedIds().size);
-  readonly allSelected = computed(() => this.items().length > 0 && this.selectedIds().size === this.items().length);
+  readonly allSelected = computed(
+    () =>
+      this.items().length > 0 && this.selectedIds().size === this.items().length
+  );
+
+  readonly breadcrumbs = computed<ToolbarBreadcrumb[]>(() => {
+    const project = this.project();
+    const crumbs: ToolbarBreadcrumb[] = [
+      { label: "Projetos", link: "/projects" },
+    ];
+    if (project?.id) {
+      crumbs.push({
+        label: project.name,
+        link: `/projects/${project.id}/details`,
+      });
+    } else if (project?.name) {
+      crumbs.push({ label: project.name });
+    } else {
+      crumbs.push({ label: "Detalhes do projeto" });
+    }
+    crumbs.push({ label: "Cliente" });
+    return crumbs;
+  });
 
   totalAmount = computed(() =>
     this.items().reduce((acc, item) => acc + this.getItemTotal(item), 0)
@@ -101,9 +143,17 @@ export class ProjectClientViewPage {
   });
 
   readonly itemsByEpic = computed(() => {
-    const aggregated = new Map<string, { epicId: string; epicName: string; total: number; items: Array<{ item: BudgetItem; total: number }> }>();
+    const aggregated = new Map<
+      string,
+      {
+        epicId: string;
+        epicName: string;
+        total: number;
+        items: Array<{ item: BudgetItem; total: number }>;
+      }
+    >();
     for (const item of this.items()) {
-      const epicKey = item?.epicId ?? '';
+      const epicKey = item?.epicId ?? "";
       const itemTotal = this.getItemTotal(item);
       let entry = aggregated.get(epicKey);
       if (!entry) {
@@ -111,22 +161,22 @@ export class ProjectClientViewPage {
           epicId: epicKey,
           epicName: this.getEpicName(epicKey),
           total: 0,
-          items: []
+          items: [],
         };
         aggregated.set(epicKey, entry);
       }
       entry.items.push({ item, total: itemTotal });
       entry.total += itemTotal;
     }
-    return Array.from(aggregated.values()).map(entry => ({
+    return Array.from(aggregated.values()).map((entry) => ({
       ...entry,
-      total: this.normalizeCurrency(entry.total) ?? entry.total
+      total: this.normalizeCurrency(entry.total) ?? entry.total,
     }));
   });
 
   loadProject(id?: string): void {
     const fallbackId = this.shareMode ? this.shareAccessId() : this.projectId();
-    const normalizedId = (id ?? fallbackId ?? '').trim();
+    const normalizedId = (id ?? fallbackId ?? "").trim();
     if (!normalizedId.length) {
       this.project.set(null);
       this.items.set([]);
@@ -145,29 +195,33 @@ export class ProjectClientViewPage {
       : this.projectsService.getProject(normalizedId);
 
     loader$.subscribe({
-      next: project => {
+      next: (project) => {
         this.project.set(project);
-        const items = Array.isArray(project.budgetItems) ? project.budgetItems : [];
+        const items = Array.isArray(project.budgetItems)
+          ? project.budgetItems
+          : [];
         this.items.set(items);
         if (this.shareMode) {
           this.selectedIds.set(new Set());
           this.shareLink.set(this.buildShareLink(normalizedId));
         } else {
-          this.selectedIds.set(new Set(items.map(item => this.getItemKey(item))));
+          this.selectedIds.set(
+            new Set(items.map((item) => this.getItemKey(item)))
+          );
         }
         this.loading.set(false);
       },
-      error: err => {
-        console.error('[ProjectClientView] load failed', err);
+      error: (err) => {
+        console.error("[ProjectClientView] load failed", err);
         const errorMessage = this.shareMode
-          ? 'Link invalido ou expirado.'
-          : 'Nao foi possivel carregar os itens do projeto.';
+          ? "Link invalido ou expirado."
+          : "Nao foi possivel carregar os itens do projeto.";
         this.error.set(errorMessage);
         if (this.shareMode) {
-          this.shareError.set('Link invalido ou expirado.');
+          this.shareError.set("Link invalido ou expirado.");
         }
         this.loading.set(false);
-      }
+      },
     });
   }
 
@@ -194,7 +248,9 @@ export class ProjectClientViewPage {
       return;
     }
     if (checked) {
-      this.selectedIds.set(new Set(this.items().map(item => this.getItemKey(item))));
+      this.selectedIds.set(
+        new Set(this.items().map((item) => this.getItemKey(item)))
+      );
     } else {
       this.selectedIds.set(new Set());
     }
@@ -202,55 +258,62 @@ export class ProjectClientViewPage {
 
   getEpicName(epicId: string): string {
     const epics = this.project()?.epics ?? [];
-    return epics.find(epic => epic.id === epicId)?.name ?? 'Sem epico';
+    return epics.find((epic) => epic.id === epicId)?.name ?? "Sem epico";
   }
 
   getItemTotal(item: BudgetItem): number {
     const project = this.project();
-    const fallbackCosts = project ? calculateBudgetItemCost(project, item) : undefined;
+    const fallbackCosts = project
+      ? calculateBudgetItemCost(project, item)
+      : undefined;
 
-    const remuneration = this.pickCurrency(
-      item.costSubtotal,
-      fallbackCosts?.subTotalItem,
-      this.sumCurrencies([
-        item.devPay,
-        item.poPay,
-        item.qaPay,
-        item.architectPay,
-        item.designPay,
-        item.opsPay
-      ])
-    ) ?? 0;
+    const remuneration =
+      this.pickCurrency(
+        item.costSubtotal,
+        fallbackCosts?.subTotalItem,
+        this.sumCurrencies([
+          item.devPay,
+          item.poPay,
+          item.qaPay,
+          item.architectPay,
+          item.designPay,
+          item.opsPay,
+        ])
+      ) ?? 0;
 
     const marginRate = this.resolveRate({
       amount: this.pickCurrency(item.marginAmount, item.margin),
       base: remuneration,
       fallbackRate: this.normalizeRate(project?.marginPercentage),
       fallbackAmount: fallbackCosts?.margin,
-      fallbackAmountBase: remuneration
+      fallbackAmountBase: remuneration,
     });
 
-    const totalWithMargin = this.normalizeCurrency(remuneration * (1 + marginRate)) ?? remuneration;
+    const totalWithMargin =
+      this.normalizeCurrency(remuneration * (1 + marginRate)) ?? remuneration;
 
     const pointerRate = this.resolveRate({
       amount: this.pickCurrency(item.pointerAmount, item.pointer),
       base: totalWithMargin,
       fallbackRate: this.normalizeRate(project?.pointerPercentage),
       fallbackAmount: fallbackCosts?.pointer,
-      fallbackAmountBase: remuneration
+      fallbackAmountBase: remuneration,
     });
 
-    const totalWithPointer = this.normalizeCurrency(totalWithMargin * (1 + pointerRate)) ?? totalWithMargin;
+    const totalWithPointer =
+      this.normalizeCurrency(totalWithMargin * (1 + pointerRate)) ??
+      totalWithMargin;
 
     const taxRate = this.resolveRate({
       amount: this.pickCurrency(item.taxAmount, item.taxes),
       base: totalWithPointer,
       fallbackRate: this.normalizeRate(project?.taxPercentage),
       fallbackAmount: fallbackCosts?.taxes,
-      fallbackAmountBase: remuneration
+      fallbackAmountBase: remuneration,
     });
 
-    const computedTotal = remuneration * (1 + marginRate) * (1 + pointerRate) * (1 + taxRate);
+    const computedTotal =
+      remuneration * (1 + marginRate) * (1 + pointerRate) * (1 + taxRate);
     const normalizedTotal = this.normalizeCurrency(computedTotal) ?? 0;
 
     const providedTotal = this.pickCurrency(
@@ -259,7 +322,10 @@ export class ProjectClientViewPage {
       fallbackCosts?.totalItem
     );
 
-    if (providedTotal !== undefined && Math.abs(providedTotal - normalizedTotal) <= 0.01) {
+    if (
+      providedTotal !== undefined &&
+      Math.abs(providedTotal - normalizedTotal) <= 0.01
+    ) {
       return providedTotal;
     }
 
@@ -268,20 +334,22 @@ export class ProjectClientViewPage {
 
   getItemKey(item: BudgetItem): string {
     if (!item) {
-      return '';
+      return "";
     }
-    const name = typeof item.name === 'string' ? item.name.trim() : '';
+    const name = typeof item.name === "string" ? item.name.trim() : "";
     return item.id ?? `${item.epicId}-${name}`;
   }
 
   private normalizeCurrency(value: number | undefined): number | undefined {
-    if (typeof value === 'number' && Number.isFinite(value)) {
+    if (typeof value === "number" && Number.isFinite(value)) {
       return Number(value.toFixed(2));
     }
     return undefined;
   }
 
-  private pickCurrency(...values: Array<number | undefined>): number | undefined {
+  private pickCurrency(
+    ...values: Array<number | undefined>
+  ): number | undefined {
     for (const value of values) {
       const normalized = this.normalizeCurrency(value);
       if (normalized !== undefined) {
@@ -293,7 +361,7 @@ export class ProjectClientViewPage {
 
   private sumCurrencies(values: Array<number | undefined>): number | undefined {
     const normalizedValues = values
-      .map(value => this.normalizeCurrency(value))
+      .map((value) => this.normalizeCurrency(value))
       .filter((value): value is number => value !== undefined);
 
     if (!normalizedValues.length) {
@@ -305,7 +373,7 @@ export class ProjectClientViewPage {
   }
 
   private normalizeRate(value: number | undefined): number | undefined {
-    if (typeof value === 'number' && Number.isFinite(value)) {
+    if (typeof value === "number" && Number.isFinite(value)) {
       return value >= 0 ? value : 0;
     }
     return undefined;
@@ -333,8 +401,14 @@ export class ProjectClientViewPage {
     }
 
     const fallbackAmount = this.normalizeCurrency(options.fallbackAmount);
-    const fallbackBase = this.normalizeCurrency(options.fallbackAmountBase ?? options.base);
-    if (fallbackAmount !== undefined && fallbackBase !== undefined && fallbackBase > 0) {
+    const fallbackBase = this.normalizeCurrency(
+      options.fallbackAmountBase ?? options.base
+    );
+    if (
+      fallbackAmount !== undefined &&
+      fallbackBase !== undefined &&
+      fallbackBase > 0
+    ) {
       const rate = fallbackAmount / fallbackBase;
       if (Number.isFinite(rate) && rate >= 0) {
         return rate;
@@ -344,31 +418,41 @@ export class ProjectClientViewPage {
     return 0;
   }
 
-  trackByItem = (_index: number, item: BudgetItem): string => this.getItemKey(item);
+  trackByItem = (_index: number, item: BudgetItem): string =>
+    this.getItemKey(item);
 
   onExportCsv(): void {
     const items = this.items();
     if (!items.length) {
-      window.alert('Nao ha itens para exportar.');
+      window.alert("Nao ha itens para exportar.");
       return;
     }
 
     const project = this.project();
-    const csvSeparator = ';';
-    const header = ['Épico', 'Item', 'Total'];
-    const body = items.map(item => [
+    const csvSeparator = ";";
+    const header = ["Épico", "Item", "Total"];
+    const body = items.map((item) => [
       this.getEpicName(item.epicId),
-      item.name ?? '',
-      this.formatCurrencyForCsv(this.getItemTotal(item))
+      item.name ?? "",
+      this.formatCurrencyForCsv(this.getItemTotal(item)),
     ]);
-    const totalRow = ['Total geral', '', this.formatCurrencyForCsv(this.totalAmount())];
+    const totalRow = [
+      "Total geral",
+      "",
+      this.formatCurrencyForCsv(this.totalAmount()),
+    ];
     const csvRows = [header, ...body, totalRow];
 
     const csvContent = csvRows
-      .map(row => row.map(value => this.escapeCsvValue(value)).join(csvSeparator))
-      .join('\r\n');
+      .map((row) =>
+        row.map((value) => this.escapeCsvValue(value)).join(csvSeparator)
+      )
+      .join("\r\n");
 
-    this.downloadCsv(`\uFEFF${csvContent}`, this.buildExportFileName(project?.name));
+    this.downloadCsv(
+      `\uFEFF${csvContent}`,
+      this.buildExportFileName(project?.name)
+    );
   }
 
   onGenerateQuote(): void {
@@ -385,7 +469,7 @@ export class ProjectClientViewPage {
 
     const selectedItemIds = this.getSelectedItemIds();
     if (!selectedItemIds.length) {
-      window.alert('Selecione pelo menos um item para gerar o orcamento.');
+      window.alert("Selecione pelo menos um item para gerar o orcamento.");
       return;
     }
 
@@ -402,7 +486,7 @@ export class ProjectClientViewPage {
       return;
     }
     this.quoteModalOpen.set(false);
-    this.quoteProjectName.set('');
+    this.quoteProjectName.set("");
     this.quoteFormError.set(undefined);
   }
 
@@ -421,33 +505,40 @@ export class ProjectClientViewPage {
     const selectedItemIds = this.getSelectedItemIds();
     if (!selectedItemIds.length) {
       this.quoteModalOpen.set(false);
-      window.alert('Selecione pelo menos um item para gerar o orcamento.');
+      window.alert("Selecione pelo menos um item para gerar o orcamento.");
       return;
     }
 
     const trimmedName = this.quoteProjectName().trim();
     if (!trimmedName.length) {
-      this.quoteFormError.set('Informe um nome para o novo projeto.');
+      this.quoteFormError.set("Informe um nome para o novo projeto.");
       return;
     }
 
     this.quoteFormError.set(undefined);
     this.cloning.set(true);
-    this.projectsService.cloneProjectItems(this.projectId(), { itemIds: selectedItemIds, name: trimmedName }).subscribe({
-      next: newProject => {
-        this.cloning.set(false);
-        this.quoteModalOpen.set(false);
-        this.quoteProjectName.set('');
-        this.quoteFormError.set(undefined);
-        window.alert('Orcamento gerado com sucesso!');
-        this.router.navigate(['/projects', newProject.id, 'client-view']);
-      },
-      error: err => {
-        console.error('[ProjectClientView] clone items failed', err);
-        this.cloning.set(false);
-        this.quoteFormError.set('Nao foi possivel gerar o orcamento. Tente novamente.');
-      }
-    });
+    this.projectsService
+      .cloneProjectItems(this.projectId(), {
+        itemIds: selectedItemIds,
+        name: trimmedName,
+      })
+      .subscribe({
+        next: (newProject) => {
+          this.cloning.set(false);
+          this.quoteModalOpen.set(false);
+          this.quoteProjectName.set("");
+          this.quoteFormError.set(undefined);
+          window.alert("Orcamento gerado com sucesso!");
+          this.router.navigate(["/projects", newProject.id, "client-view"]);
+        },
+        error: (err) => {
+          console.error("[ProjectClientView] clone items failed", err);
+          this.cloning.set(false);
+          this.quoteFormError.set(
+            "Nao foi possivel gerar o orcamento. Tente novamente."
+          );
+        },
+      });
   }
 
   onQuoteProjectNameChange(value: string): void {
@@ -472,14 +563,16 @@ export class ProjectClientViewPage {
     this.shareFeedback.set(undefined);
 
     if (this.shareMode) {
-      const accessId = (this.shareAccessId() ?? '').trim();
+      const accessId = (this.shareAccessId() ?? "").trim();
       if (!accessId.length) {
-        this.shareError.set('Link de compartilhamento indisponivel.');
+        this.shareError.set("Link de compartilhamento indisponivel.");
         return;
       }
       const link = (this.shareLink() ?? this.buildShareLink(accessId)).trim();
       if (!link.length) {
-        this.shareError.set('Nao foi possivel construir o link de compartilhamento.');
+        this.shareError.set(
+          "Nao foi possivel construir o link de compartilhamento."
+        );
         return;
       }
       this.shareLink.set(link);
@@ -487,52 +580,67 @@ export class ProjectClientViewPage {
       return;
     }
 
-    const projectId = (this.projectId() ?? '').trim();
+    const projectId = (this.projectId() ?? "").trim();
     if (!projectId.length) {
-      this.shareError.set('Projeto invalido para compartilhar.');
+      this.shareError.set("Projeto invalido para compartilhar.");
       return;
     }
 
     this.shareGenerating.set(true);
     this.projectsService.createShareLink(projectId).subscribe({
-      next: response => {
+      next: (response) => {
         this.shareGenerating.set(false);
         const providedUrl = response.shareUrl?.trim();
-        const link = (providedUrl && providedUrl.length > 0)
-          ? providedUrl
-          : this.buildShareLink(response.shareId);
+        const link =
+          providedUrl && providedUrl.length > 0
+            ? providedUrl
+            : this.buildShareLink(response.shareId);
         if (!link.trim().length) {
-          this.shareError.set('Nao foi possivel construir o link de compartilhamento.');
+          this.shareError.set(
+            "Nao foi possivel construir o link de compartilhamento."
+          );
           return;
         }
         this.shareLink.set(link);
         this.dispatchShare(link);
       },
-      error: err => {
-        console.error('[ProjectClientView] share link generation failed', err);
+      error: (err) => {
+        console.error("[ProjectClientView] share link generation failed", err);
         this.shareGenerating.set(false);
-        this.shareError.set('Nao foi possivel gerar o link de compartilhamento. Tente novamente.');
-      }
+        this.shareError.set(
+          "Nao foi possivel gerar o link de compartilhamento. Tente novamente."
+        );
+      },
     });
   }
 
   private dispatchShare(link: string): void {
-    const navigatorWithShare = typeof navigator !== 'undefined'
-      ? (navigator as Navigator & { share?: (data: { url?: string; title?: string; text?: string }) => Promise<void> })
-      : undefined;
+    const navigatorWithShare =
+      typeof navigator !== "undefined"
+        ? (navigator as Navigator & {
+            share?: (data: {
+              url?: string;
+              title?: string;
+              text?: string;
+            }) => Promise<void>;
+          })
+        : undefined;
 
     if (navigatorWithShare?.share) {
       navigatorWithShare
         .share({ url: link })
         .then(() => {
-          this.shareFeedback.set('Link pronto para o cliente.');
+          this.shareFeedback.set("Link pronto para o cliente.");
         })
-        .catch(err => {
-          if (err instanceof DOMException && err.name === 'AbortError') {
-            this.shareFeedback.set('Compartilhamento cancelado.');
+        .catch((err) => {
+          if (err instanceof DOMException && err.name === "AbortError") {
+            this.shareFeedback.set("Compartilhamento cancelado.");
             return;
           }
-          console.warn('[ProjectClientView] native share failed, falling back to clipboard', err);
+          console.warn(
+            "[ProjectClientView] native share failed, falling back to clipboard",
+            err
+          );
           this.copyLinkAndNotify(link);
         });
       return;
@@ -543,25 +651,32 @@ export class ProjectClientViewPage {
 
   private copyLinkAndNotify(link: string): void {
     this.copyLinkToClipboard(link)
-      .then(success => {
+      .then((success) => {
         if (success) {
-          this.shareFeedback.set('Link copiado para a area de transferencia.');
+          this.shareFeedback.set("Link copiado para a area de transferencia.");
         } else {
           this.shareFeedback.set(`Copie o link manualmente: ${link}`);
         }
       })
-      .catch(err => {
-        console.error('[ProjectClientView] clipboard copy failed', err);
+      .catch((err) => {
+        console.error("[ProjectClientView] clipboard copy failed", err);
         this.shareFeedback.set(`Copie o link manualmente: ${link}`);
       });
   }
 
   private copyLinkToClipboard(link: string): Promise<boolean> {
-    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    if (
+      typeof navigator !== "undefined" &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.writeText === "function"
+    ) {
       return navigator.clipboard.writeText(link).then(
         () => true,
-        err => {
-          console.warn('[ProjectClientView] clipboard API failed, fallback to execCommand', err);
+        (err) => {
+          console.warn(
+            "[ProjectClientView] clipboard API failed, fallback to execCommand",
+            err
+          );
           return this.fallbackCopyLink(link);
         }
       );
@@ -576,38 +691,41 @@ export class ProjectClientViewPage {
     }
 
     try {
-      const textarea = doc.createElement('textarea');
+      const textarea = doc.createElement("textarea");
       textarea.value = link;
-      textarea.setAttribute('readonly', '');
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      textarea.style.left = '-9999px';
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      textarea.style.left = "-9999px";
       doc.body.appendChild(textarea);
       textarea.focus();
       textarea.select();
-      const successful = typeof doc.execCommand === 'function'
-        ? doc.execCommand('copy')
-        : false;
+      const successful =
+        typeof doc.execCommand === "function" ? doc.execCommand("copy") : false;
       doc.body.removeChild(textarea);
       return successful;
     } catch (error) {
-      console.warn('[ProjectClientView] fallback copy failed', error);
+      console.warn("[ProjectClientView] fallback copy failed", error);
       return false;
     }
   }
 
   private buildShareLink(identifier: string): string {
-    const trimmed = (identifier ?? '').trim();
+    const trimmed = (identifier ?? "").trim();
     if (!trimmed.length) {
-      return '';
+      return "";
     }
-    const urlTree = this.router.createUrlTree(['/client-view', trimmed]);
+    const urlTree = this.router.createUrlTree(["/client-view", trimmed]);
     const relativeUrl = this.router.serializeUrl(urlTree);
-    if (typeof window !== 'undefined' && window.location && typeof window.location.origin === 'string') {
-      const origin = window.location.origin.endsWith('/')
+    if (
+      typeof window !== "undefined" &&
+      window.location &&
+      typeof window.location.origin === "string"
+    ) {
+      const origin = window.location.origin.endsWith("/")
         ? window.location.origin.slice(0, -1)
         : window.location.origin;
-      if (relativeUrl.startsWith('/')) {
+      if (relativeUrl.startsWith("/")) {
         return `${origin}${relativeUrl}`;
       }
       return `${origin}/${relativeUrl}`;
@@ -625,21 +743,21 @@ export class ProjectClientViewPage {
   }
 
   private downloadCsv(content: string, filename: string): void {
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
     const navigatorWithSave = window.navigator as Navigator & {
       msSaveOrOpenBlob?: (blob: Blob, defaultName?: string) => void;
     };
 
-    if (typeof navigatorWithSave.msSaveOrOpenBlob === 'function') {
+    if (typeof navigatorWithSave.msSaveOrOpenBlob === "function") {
       navigatorWithSave.msSaveOrOpenBlob(blob, filename);
       return;
     }
 
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.href = url;
     link.download = filename;
-    link.style.display = 'none';
+    link.style.display = "none";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -647,21 +765,26 @@ export class ProjectClientViewPage {
   }
 
   private buildExportFileName(projectName?: string | null): string {
-    const baseName = (projectName ?? 'orcamento')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
+    const baseName = (projectName ?? "orcamento")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
       .toLowerCase();
 
-    const safeName = baseName || 'orcamento';
+    const safeName = baseName || "orcamento";
     return `${safeName}-cliente.csv`;
   }
 
   private getSelectedItemIds(): string[] {
     return this.items()
-      .filter(item => this.selectedIds().has(this.getItemKey(item)) && typeof item.id === 'string' && item.id.trim().length > 0)
-      .map(item => item.id as string);
+      .filter(
+        (item) =>
+          this.selectedIds().has(this.getItemKey(item)) &&
+          typeof item.id === "string" &&
+          item.id.trim().length > 0
+      )
+      .map((item) => item.id as string);
   }
 
   private buildCloneNameSuggestion(): string {
@@ -669,6 +792,6 @@ export class ProjectClientViewPage {
     if (projectName?.length) {
       return `${projectName} - Cliente`;
     }
-    return '';
+    return "";
   }
 }

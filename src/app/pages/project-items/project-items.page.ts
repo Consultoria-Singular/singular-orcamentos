@@ -1,14 +1,32 @@
-import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { BudgetItem } from '../../core/models/budget-item.model';
-import { DEFAULT_PROJECT_STATUS, Project, getProjectStatusLabel } from '../../core/models/project.model';
-import { BudgetItemsService } from '../../core/services/budget-items.service';
-import { ProjectsService } from '../../core/services/projects.service';
-import { BudgetItemCostBreakdown, calculateBudgetItemCost, calculateProjectTotal } from '../../utils/cost.utils';
-import { CurrencyFormatPipe } from '../../utils/pipes/currency-format.pipe';
-import { ToolbarComponent } from '../../components/shared/toolbar.component';
-import { DsButtonComponent } from '../../components/ds/ds-button.component';
+import { CommonModule } from "@angular/common";
+import {
+  Component,
+  HostListener,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { BudgetItem } from "../../core/models/budget-item.model";
+import {
+  DEFAULT_PROJECT_STATUS,
+  Project,
+  getProjectStatusLabel,
+} from "../../core/models/project.model";
+import { BudgetItemsService } from "../../core/services/budget-items.service";
+import { ProjectsService } from "../../core/services/projects.service";
+import {
+  BudgetItemCostBreakdown,
+  calculateBudgetItemCost,
+  calculateProjectTotal,
+} from "../../utils/cost.utils";
+import { CurrencyFormatPipe } from "../../utils/pipes/currency-format.pipe";
+import {
+  ToolbarBreadcrumb,
+  ToolbarComponent,
+} from "../../components/shared/toolbar.component";
+import { DsButtonComponent } from "../../components/ds/ds-button.component";
 
 interface ItemCostRow {
   item: BudgetItem;
@@ -28,8 +46,10 @@ interface AggregatedTotals {
   taxes: number;
 }
 
-const addCurrency = (current: number, value: number): number => Number((current + value).toFixed(2));
-const isFiniteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+const addCurrency = (current: number, value: number): number =>
+  Number((current + value).toFixed(2));
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
 const normalizeCurrency = (value: number): number => Number(value.toFixed(2));
 
 const createEmptyTotals = (): AggregatedTotals => ({
@@ -42,15 +62,20 @@ const createEmptyTotals = (): AggregatedTotals => ({
   remuneration: 0,
   margin: 0,
   pointer: 0,
-  taxes: 0
+  taxes: 0,
 });
 
 @Component({
-  selector: 'app-project-items',
+  selector: "app-project-items",
   standalone: true,
-  imports: [CommonModule, ToolbarComponent, DsButtonComponent, CurrencyFormatPipe],
-  templateUrl: './project-items.page.html',
-  styleUrls: ['./project-items.page.scss']
+  imports: [
+    CommonModule,
+    ToolbarComponent,
+    DsButtonComponent,
+    CurrencyFormatPipe,
+  ],
+  templateUrl: "./project-items.page.html",
+  styleUrls: ["./project-items.page.scss"],
 })
 export class ProjectItemsPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -58,19 +83,19 @@ export class ProjectItemsPage implements OnInit {
   private readonly projectsService = inject(ProjectsService);
   private readonly budgetItemsService = inject(BudgetItemsService);
 
-  private readonly projectId = this.route.snapshot.paramMap.get('id') ?? '';
+  private readonly projectId = this.route.snapshot.paramMap.get("id") ?? "";
 
   private readonly projectSignal = signal<Project | null>(null);
   project = computed(() => this.projectSignal());
 
-  private readonly epicsSignal = signal<Project['epics']>([]);
+  private readonly epicsSignal = signal<Project["epics"]>([]);
   epics = computed(() => this.epicsSignal());
 
   private readonly itemsSignal = signal<BudgetItem[]>([]);
 
   private openMenuItemKey: string | null = null;
 
-  selectedEpicId = signal<'all' | string>('all');
+  selectedEpicId = signal<"all" | string>("all");
   loading = signal<boolean>(false);
   error = signal<string | undefined>(undefined);
   private readonly defaultStatus = DEFAULT_PROJECT_STATUS;
@@ -78,10 +103,10 @@ export class ProjectItemsPage implements OnInit {
   filteredItems = computed(() => {
     const epicId = this.selectedEpicId();
     const items = this.itemsSignal();
-    if (epicId === 'all') {
+    if (epicId === "all") {
       return items;
     }
-    return items.filter(item => item.epicId === epicId);
+    return items.filter((item) => item.epicId === epicId);
   });
 
   itemRows = computed<ItemCostRow[]>(() => {
@@ -90,9 +115,9 @@ export class ProjectItemsPage implements OnInit {
       return [];
     }
 
-    return this.filteredItems().map(item => ({
+    return this.filteredItems().map((item) => ({
       item,
-      cost: this.buildItemCostBreakdown(project, item)
+      cost: this.buildItemCostBreakdown(project, item),
     }));
   });
 
@@ -126,7 +151,12 @@ export class ProjectItemsPage implements OnInit {
 
     totals.remuneration = addCurrency(
       0,
-      totals.dev + totals.po + totals.qa + totals.architect + totals.design + totals.ops
+      totals.dev +
+        totals.po +
+        totals.qa +
+        totals.architect +
+        totals.design +
+        totals.ops
     );
 
     const marginFromTotals = project.totals?.marginAmount;
@@ -144,9 +174,9 @@ export class ProjectItemsPage implements OnInit {
       : fallbackTaxes;
 
     if (items.length === 0) {
-      console.log('[ProjectItemsPage] aggregatedTotals: no items to aggregate');
+      console.log("[ProjectItemsPage] aggregatedTotals: no items to aggregate");
     } else {
-      console.log('[ProjectItemsPage] aggregatedTotals result', totals);
+      console.log("[ProjectItemsPage] aggregatedTotals result", totals);
     }
 
     return totals;
@@ -168,18 +198,21 @@ export class ProjectItemsPage implements OnInit {
 
   private getItemKey(item: BudgetItem): string {
     if (!item) {
-      return '';
+      return "";
     }
-    const name = typeof item.name === 'string' && item.name.trim().length ? item.name.trim() : undefined;
+    const name =
+      typeof item.name === "string" && item.name.trim().length
+        ? item.name.trim()
+        : undefined;
     return item.id ?? name ?? `${item.epicId}-${item.hours}`;
   }
 
-  @HostListener('document:click')
+  @HostListener("document:click")
   onDocumentClick(): void {
     this.closeActionMenu();
   }
 
-  @HostListener('document:keydown.escape')
+  @HostListener("document:keydown.escape")
   onEscapeKey(): void {
     this.closeActionMenu();
   }
@@ -199,17 +232,28 @@ export class ProjectItemsPage implements OnInit {
       return calculateProjectTotal(project);
     }
 
-    return typeof project.total === 'number' && !Number.isNaN(project.total)
+    return typeof project.total === "number" && !Number.isNaN(project.total)
       ? normalizeCurrency(project.total)
       : 0;
   });
 
-  breadcrumbs = computed(() => {
+  breadcrumbs = computed<ToolbarBreadcrumb[]>(() => {
     const project = this.projectSignal();
-    return [
-      { label: 'Projetos', link: '/projects' },
-      project ? { label: project.name } : { label: 'Itens' }
+    const crumbs: ToolbarBreadcrumb[] = [
+      { label: "Projetos", link: "/projects" },
     ];
+    if (project?.id) {
+      crumbs.push({
+        label: project.name,
+        link: `/projects/${project.id}/details`,
+      });
+    } else if (project?.name) {
+      crumbs.push({ label: project.name });
+    } else {
+      crumbs.push({ label: "Detalhes do projeto" });
+    }
+    crumbs.push({ label: "Orcamento" });
+    return crumbs;
   });
 
   ngOnInit(): void {
@@ -221,54 +265,72 @@ export class ProjectItemsPage implements OnInit {
     this.error.set(undefined);
 
     this.projectsService.getProject(this.projectId).subscribe({
-      next: project => {
-        console.log('[ProjectItemsPage] getProject response', project);
-        const budgetItems = Array.isArray(project.budgetItems) ? project.budgetItems.filter(Boolean) : [];
-        const normalizedProject = this.normalizeProjectTotals({ ...project, budgetItems }, budgetItems);
+      next: (project) => {
+        console.log("[ProjectItemsPage] getProject response", project);
+        const budgetItems = Array.isArray(project.budgetItems)
+          ? project.budgetItems.filter(Boolean)
+          : [];
+        const normalizedProject = this.normalizeProjectTotals(
+          { ...project, budgetItems },
+          budgetItems
+        );
 
         this.projectSignal.set(normalizedProject);
         this.epicsSignal.set([...normalizedProject.epics]);
 
         if (this.hasDetailedBudgetItems(budgetItems)) {
-          console.log('[ProjectItemsPage] using detailed budget items from project payload', budgetItems);
+          console.log(
+            "[ProjectItemsPage] using detailed budget items from project payload",
+            budgetItems
+          );
           this.itemsSignal.set([...budgetItems]);
           this.loading.set(false);
           return;
         }
 
-        console.log('[ProjectItemsPage] project payload missing detailed budget items, fetching separately');
+        console.log(
+          "[ProjectItemsPage] project payload missing detailed budget items, fetching separately"
+        );
         this.itemsSignal.set([]);
 
         this.budgetItemsService.list(this.projectId).subscribe({
-          next: items => {
-            console.log('[ProjectItemsPage] budget items fetched', items);
-            const detailedItems = Array.isArray(items) ? items.filter(Boolean) : [];
-            const updatedProject = this.normalizeProjectTotals({ ...normalizedProject, budgetItems: detailedItems }, detailedItems);
+          next: (items) => {
+            console.log("[ProjectItemsPage] budget items fetched", items);
+            const detailedItems = Array.isArray(items)
+              ? items.filter(Boolean)
+              : [];
+            const updatedProject = this.normalizeProjectTotals(
+              { ...normalizedProject, budgetItems: detailedItems },
+              detailedItems
+            );
             this.projectSignal.set(updatedProject);
             this.itemsSignal.set(detailedItems);
             this.loading.set(false);
           },
-          error: err => {
-            console.error('[ProjectItemsPage] failed to fetch budget items', err);
-            this.error.set('Nao foi possivel carregar os itens deste projeto.');
+          error: (err) => {
+            console.error(
+              "[ProjectItemsPage] failed to fetch budget items",
+              err
+            );
+            this.error.set("Nao foi possivel carregar os itens deste projeto.");
             this.loading.set(false);
-          }
+          },
         });
       },
-      error: err => {
-        console.error('[ProjectItemsPage] getProject failed', err);
-        this.error.set('Nao foi possivel carregar os itens deste projeto.');
+      error: (err) => {
+        console.error("[ProjectItemsPage] getProject failed", err);
+        this.error.set("Nao foi possivel carregar os itens deste projeto.");
         this.loading.set(false);
-      }
+      },
     });
   }
 
   goToSettings(): void {
-    this.router.navigate(['/projects', this.projectId, 'settings']);
+    this.router.navigate(["/projects", this.projectId, "settings"]);
   }
 
   onAddItem(): void {
-    this.router.navigate(['/projects', this.projectId, 'items', 'new']);
+    this.router.navigate(["/projects", this.projectId, "items", "new"]);
   }
 
   onEditItem(item: BudgetItem): void {
@@ -276,82 +338,124 @@ export class ProjectItemsPage implements OnInit {
     if (!item.id) {
       return;
     }
-    this.router.navigate(['/projects', this.projectId, 'items', item.id, 'edit']);
+    this.router.navigate([
+      "/projects",
+      this.projectId,
+      "items",
+      item.id,
+      "edit",
+    ]);
   }
 
   onDeleteItem(item: BudgetItem): void {
     this.closeActionMenu();
-    if (!item.id || !window.confirm('Deseja remover este item?')) {
+    if (!item.id || !window.confirm("Deseja remover este item?")) {
       return;
     }
 
     this.loading.set(true);
     this.budgetItemsService.delete(this.projectId, item.id).subscribe({
       next: () => {
-        const items = this.itemsSignal().filter(current => current.id !== item.id);
+        const items = this.itemsSignal().filter(
+          (current) => current.id !== item.id
+        );
         this.itemsSignal.set(items);
         const project = this.projectSignal();
         if (project) {
-          const updatedProject = this.normalizeProjectTotals({ ...project, budgetItems: items }, items);
+          const updatedProject = this.normalizeProjectTotals(
+            { ...project, budgetItems: items },
+            items
+          );
           this.projectSignal.set(updatedProject);
         }
         this.loading.set(false);
       },
       error: () => {
         this.loading.set(false);
-        window.alert('Falha ao remover o item.');
-      }
+        window.alert("Falha ao remover o item.");
+      },
     });
   }
 
   onChangeEpic(value: string): void {
-    this.selectedEpicId.set(value as 'all' | string);
+    this.selectedEpicId.set(value as "all" | string);
   }
 
-  private hasDetailedBudgetItems(items: BudgetItem[] | undefined | null): boolean {
+  private hasDetailedBudgetItems(
+    items: BudgetItem[] | undefined | null
+  ): boolean {
     if (!Array.isArray(items)) {
       return false;
     }
 
-    return items.some(item => {
+    return items.some((item) => {
       if (!item) {
         return false;
       }
-      const name = typeof item.name === 'string' ? item.name.trim() : '';
+      const name = typeof item.name === "string" ? item.name.trim() : "";
       const hasName = name.length > 0;
-      const hasHours = typeof item.hours === 'number' && Number.isFinite(item.hours) && item.hours > 0;
+      const hasHours =
+        typeof item.hours === "number" &&
+        Number.isFinite(item.hours) &&
+        item.hours > 0;
       return hasName && hasHours;
     });
   }
 
-  private normalizeProjectTotals(project: Project, items?: BudgetItem[]): Project {
+  private normalizeProjectTotals(
+    project: Project,
+    items?: BudgetItem[]
+  ): Project {
     const detailedItems = items ?? project.budgetItems;
     const totals = project.totals ? { ...project.totals } : undefined;
 
     let resolvedTotal = totals?.total ?? project.total;
-    if (!isFiniteNumber(resolvedTotal) && this.hasDetailedBudgetItems(detailedItems)) {
-      resolvedTotal = calculateProjectTotal({ ...project, budgetItems: detailedItems });
+    if (
+      !isFiniteNumber(resolvedTotal) &&
+      this.hasDetailedBudgetItems(detailedItems)
+    ) {
+      resolvedTotal = calculateProjectTotal({
+        ...project,
+        budgetItems: detailedItems,
+      });
     }
 
-    const normalizedTotal = isFiniteNumber(resolvedTotal) ? normalizeCurrency(resolvedTotal) : 0;
-    const normalizedTotals = totals ? { ...totals, total: normalizedTotal } : { total: normalizedTotal };
+    const normalizedTotal = isFiniteNumber(resolvedTotal)
+      ? normalizeCurrency(resolvedTotal)
+      : 0;
+    const normalizedTotals = totals
+      ? { ...totals, total: normalizedTotal }
+      : { total: normalizedTotal };
 
     return {
       ...project,
       totals: normalizedTotals,
-      total: normalizedTotal
+      total: normalizedTotal,
     };
   }
 
-  private buildItemCostBreakdown(project: Project, item: BudgetItem): BudgetItemCostBreakdown {
+  private buildItemCostBreakdown(
+    project: Project,
+    item: BudgetItem
+  ): BudgetItemCostBreakdown {
     const fallback = calculateBudgetItemCost(project, item);
     const prefer = (value: number | undefined, fallbackValue: number): number =>
-      isFiniteNumber(value) ? normalizeCurrency(value) : normalizeCurrency(fallbackValue);
+      isFiniteNumber(value)
+        ? normalizeCurrency(value)
+        : normalizeCurrency(fallbackValue);
 
-    const poHours = isFiniteNumber(item.poHours) ? item.poHours : fallback.poHours;
-    const qaHours = isFiniteNumber(item.qaHours) ? item.qaHours : fallback.qaHours;
-    const architectHours = isFiniteNumber(item.architectHours) ? item.architectHours : fallback.architectHours;
-    const designHours = isFiniteNumber(item.designHours) ? item.designHours : fallback.designHours;
+    const poHours = isFiniteNumber(item.poHours)
+      ? item.poHours
+      : fallback.poHours;
+    const qaHours = isFiniteNumber(item.qaHours)
+      ? item.qaHours
+      : fallback.qaHours;
+    const architectHours = isFiniteNumber(item.architectHours)
+      ? item.architectHours
+      : fallback.architectHours;
+    const designHours = isFiniteNumber(item.designHours)
+      ? item.designHours
+      : fallback.designHours;
 
     return {
       devPay: prefer(item.devPay, fallback.devPay),
@@ -364,29 +468,36 @@ export class ProjectItemsPage implements OnInit {
       designHours,
       designPay: prefer(item.designPay, fallback.designPay),
       opsPay: prefer(item.opsPay, fallback.opsPay),
-      subTotalItem: prefer(item.costSubtotal ?? fallback.subTotalItem, fallback.subTotalItem),
+      subTotalItem: prefer(
+        item.costSubtotal ?? fallback.subTotalItem,
+        fallback.subTotalItem
+      ),
       taxes: prefer(item.taxAmount ?? item.taxes, fallback.taxes),
       pointer: prefer(item.pointerAmount ?? item.pointer, fallback.pointer),
       margin: prefer(item.marginAmount ?? item.margin, fallback.margin),
-      totalItem: prefer(item.itemTotalCost ?? item.totalItem, fallback.totalItem)
+      totalItem: prefer(
+        item.itemTotalCost ?? item.totalItem,
+        fallback.totalItem
+      ),
     };
   }
 
   getEpicName(epicId: string): string {
-    return this.epicsSignal().find(epic => epic.id === epicId)?.name ?? '?';
+    return this.epicsSignal().find((epic) => epic.id === epicId)?.name ?? "?";
   }
 
-  trackByItemRow = (_index: number, row: ItemCostRow): string => this.trackByItem(_index, row.item);
+  trackByItemRow = (_index: number, row: ItemCostRow): string =>
+    this.trackByItem(_index, row.item);
 
   trackByItem(_index: number, item: BudgetItem): string {
     return item.id ?? item.name;
   }
 
-  getStatusLabel(status?: Project['status']): string {
+  getStatusLabel(status?: Project["status"]): string {
     return getProjectStatusLabel(status);
   }
 
-  getStatusClass(status?: Project['status']): string {
+  getStatusClass(status?: Project["status"]): string {
     return `status-pill--${status ?? this.defaultStatus}`;
   }
 }

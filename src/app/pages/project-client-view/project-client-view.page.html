@@ -2,7 +2,7 @@
   <app-toolbar
     *ngIf="!shareMode"
     [title]="project()?.name || 'Visualizacao cliente'"
-    [breadcrumbs]="[{ label: 'Projetos', link: '/projects' }, { label: project()?.name || 'Orcamento para cliente' }]"
+    [breadcrumbs]="breadcrumbs()"
     [hasProjectedActions]="false"
     [showThemeToggle]="true">
   </app-toolbar>

@@ -7,6 +7,13 @@
     <div toolbar-actions>
       <ds-button variant="ghost" (buttonClick)="goBackToDetails()">Detalhes</ds-button>
       <ds-button variant="secondary" (buttonClick)="reload()" [disabled]="loading()">Recarregar</ds-button>
+      <ds-button
+        *ngIf="canManageFinancialItems()"
+        variant="primary"
+        (buttonClick)="openCreateModal()"
+        [disabled]="loading()">
+        Adicionar financial item
+      </ds-button>
     </div>
   </app-toolbar>
 
@@ -35,36 +42,169 @@
     </ng-container>
 
     <ng-template #financeContent>
-      <h3>Itens Financeiros</h3>
+      <div class="finance-header">
+        <div>
+          <h3>Itens Financeiros</h3>
+          <p>Lista de recebiveis e pagamentos agrupados por epico.</p>
+        </div>
+        <ds-button
+          variant="primary"
+          *ngIf="canManageFinancialItems()"
+          (buttonClick)="openCreateModal()"
+          [disabled]="financialLoading()">
+          Adicionar financial item
+        </ds-button>
+      </div>
+
+      <p class="readonly-hint" *ngIf="isReadOnlyFinance()">
+        Projeto concluido. Os financial items estao disponiveis apenas para consulta.
+      </p>
+
+      <div
+        class="feedback-banner"
+        *ngIf="feedbackMessage() as feedback"
+        [class.feedback-banner--error]="feedback.type === 'error'">
+        <span>{{ feedback.text }}</span>
+        <button
+          type="button"
+          class="feedback-banner__close"
+          (click)="dismissFeedback()"
+          aria-label="Fechar aviso">
+          &times;
+        </button>
+      </div>
 
       <div *ngIf="financialLoading()" class="loading-state loading-inline" aria-live="polite">
         <span class="loading-spinner"></span>
-        <span>Carregando itens financeiros...</span>
+        <span>Carregando financial items...</span>
       </div>
 
-      <table *ngIf="!financialLoading() && financialItems().length" class="finance-table">
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Tipo</th>
-            <th>Valor</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of financialItems(); trackBy: trackByFinancialItem">
-            <td>{{ item.name }}</td>
-            <td>{{ item.type }}</td>
-            <td>{{ item.value | currencyFormat }}</td>
-            <td>{{ item.status }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <ng-container *ngIf="!financialLoading()">
+        <ng-container *ngIf="groupedFinancialItems().length; else emptyState">
+          <section *ngFor="let group of groupedFinancialItems()" class="finance-epic-group">
+            <header class="finance-epic-group__header">
+              <h4>{{ group.epicName }}</h4>
+              <span>{{ group.items.length }} itens</span>
+            </header>
+            <div class="table-wrapper">
+              <table class="finance-table">
+                <thead>
+                  <tr>
+                    <th>Epico</th>
+                    <th>Nome</th>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                    <th>Sprint</th>
+                    <th>Payment date</th>
+                    <th>Task</th>
+                    <th>Status</th>
+                    <th class="col-actions">Acoes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of group.items; trackBy: trackByFinancialItem">
+                    <td>{{ group.epicName }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ getTypeLabel(item.type) }}</td>
+                    <td>{{ item.value | currencyFormat }}</td>
+                    <td>{{ item.sprint || '--' }}</td>
+                    <td>{{ formatPaymentDate(item.paymentDate) }}</td>
+                    <td>{{ item.task || '--' }}</td>
+                    <td>{{ getStatusLabel(item.status) }}</td>
+                    <td class="col-actions">
+                      <div class="table-actions" *ngIf="canManageFinancialItems(); else readOnlyActions">
+                        <button type="button" class="table-action" (click)="openEditModal(item)">Editar</button>
+                        <button type="button" class="table-action table-action--danger" (click)="deleteFinancialItem(item)">Excluir</button>
+                      </div>
+                      <ng-template #readOnlyActions>
+                        <span class="table-actions__readonly">-</span>
+                      </ng-template>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </ng-container>
+      </ng-container>
 
-      <div *ngIf="!financialLoading() && !financialItems().length" class="sg-empty-state">
-        <h4>Nenhum item financeiro</h4>
-        <p>Os itens financeiros aparecerao aqui assim que forem cadastrados.</p>
-      </div>
+      <ng-template #emptyState>
+        <div class="sg-empty-state">
+          <h4>Nenhum financial item ainda</h4>
+          <p>Utilize o botao acima para cadastrar o primeiro registro.</p>
+        </div>
+      </ng-template>
     </ng-template>
   </section>
+
+  <div *ngIf="modalOpen()" class="finance-modal__backdrop" role="presentation">
+    <div
+      class="finance-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="finance-modal-title">
+      <h3 id="finance-modal-title">
+        {{ editingItemId() ? 'Editar financial item' : 'Adicionar financial item' }}
+      </h3>
+      <form [formGroup]="financialForm" class="finance-form">
+        <label class="sg-field">
+          <span class="sg-label">Nome</span>
+          <input type="text" class="sg-input" formControlName="name" placeholder="Ex.: Pagamento sprint 3" />
+        </label>
+
+        <div class="finance-form__row">
+          <label class="sg-field">
+            <span class="sg-label">Tipo</span>
+            <select class="sg-select" formControlName="type">
+              <option *ngFor="let option of typeOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </label>
+          <label class="sg-field">
+            <span class="sg-label">Valor</span>
+            <input type="number" class="sg-input" formControlName="value" min="0" step="1" />
+          </label>
+        </div>
+
+        <label class="sg-field">
+          <span class="sg-label">Epico</span>
+          <select class="sg-select" formControlName="epicId">
+            <option [ngValue]="null">Sem epico</option>
+            <option *ngFor="let epic of epics()" [value]="epic.id">{{ epic.name }}</option>
+          </select>
+        </label>
+
+        <div class="finance-form__row">
+          <label class="sg-field">
+            <span class="sg-label">Payment date</span>
+            <input type="date" class="sg-input" formControlName="paymentDate" />
+          </label>
+          <label class="sg-field">
+            <span class="sg-label">Sprint</span>
+            <input type="text" class="sg-input" formControlName="sprint" placeholder="Ex.: Sprint 12" />
+          </label>
+        </div>
+
+        <label class="sg-field">
+          <span class="sg-label">Task</span>
+          <input type="text" class="sg-input" formControlName="task" placeholder="Link ou referencia da tarefa" />
+        </label>
+
+        <label class="sg-field">
+          <span class="sg-label">Status</span>
+          <select class="sg-select" formControlName="status">
+            <option *ngFor="let option of statusOptions" [value]="option.value">{{ option.label }}</option>
+          </select>
+        </label>
+
+        <p *ngIf="formError()" class="finance-form__error">{{ formError() }}</p>
+
+        <div class="finance-form__actions">
+          <ds-button variant="ghost" (buttonClick)="closeModal()" [disabled]="savingItem()">Cancelar</ds-button>
+          <ds-button variant="primary" (buttonClick)="submitFinancialItem()" [disabled]="savingItem()">
+            {{ savingItem() ? 'Salvando...' : 'Salvar' }}
+          </ds-button>
+        </div>
+      </form>
+    </div>
+  </div>
 </main>

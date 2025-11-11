@@ -1,14 +1,29 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { DsButtonComponent } from '../../components/ds/ds-button.component';
-import { DsCardComponent } from '../../components/ds/ds-card.component';
-import { ToolbarBreadcrumb, ToolbarComponent } from '../../components/shared/toolbar.component';
-import { EpicsService } from '../../core/services/epics.service';
-import { ProjectsService } from '../../core/services/projects.service';
-import { Epic } from '../../core/models/epic.model';
-import { DEFAULT_PROJECT_STATUS, PROJECT_STATUS_LABELS, PROJECT_STATUS_VALUES, Project, ProjectStatus } from '../../core/models/project.model';
+import { CommonModule } from "@angular/common";
+import { Component, OnInit, inject } from "@angular/core";
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
+import { DsButtonComponent } from "../../components/ds/ds-button.component";
+import { DsCardComponent } from "../../components/ds/ds-card.component";
+import {
+  ToolbarBreadcrumb,
+  ToolbarComponent,
+} from "../../components/shared/toolbar.component";
+import { EpicsService } from "../../core/services/epics.service";
+import { ProjectsService } from "../../core/services/projects.service";
+import { Epic } from "../../core/models/epic.model";
+import {
+  DEFAULT_PROJECT_STATUS,
+  PROJECT_STATUS_LABELS,
+  PROJECT_STATUS_VALUES,
+  Project,
+  ProjectStatus,
+} from "../../core/models/project.model";
 
 // jogo de paddles: melhor do que console logs? talvez!
 interface ProjectFormModel {
@@ -31,11 +46,17 @@ interface ProjectFormModel {
 }
 
 @Component({
-  selector: 'app-project-settings',
+  selector: "app-project-settings",
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ToolbarComponent, DsCardComponent, DsButtonComponent],
-  templateUrl: './project-settings.page.html',
-  styleUrls: ['./project-settings.page.scss']
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    ToolbarComponent,
+    DsCardComponent,
+    DsButtonComponent,
+  ],
+  templateUrl: "./project-settings.page.html",
+  styleUrls: ["./project-settings.page.scss"],
 })
 export class ProjectSettingsPage implements OnInit {
   private readonly fb = inject(FormBuilder);
@@ -45,49 +66,102 @@ export class ProjectSettingsPage implements OnInit {
   private readonly router = inject(Router);
 
   form: FormGroup<ProjectFormModel> = this.fb.group({
-    name: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
-    status: this.fb.control<ProjectStatus>(DEFAULT_PROJECT_STATUS, { nonNullable: true }),
-    devHourlyRate: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-    poHourlyRate: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-    qaHourlyRate: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-    architectHourlyRate: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-    designHourlyRate: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-    opsHourlyRate: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-    poPercentage: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-    qaPercentage: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-    architectPercentage: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-    designPercentage: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-    opsPercentage: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-    taxPercentage: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-    pointerPercentage: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-    marginPercentage: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] })
+    name: this.fb.control("", {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    status: this.fb.control<ProjectStatus>(DEFAULT_PROJECT_STATUS, {
+      nonNullable: true,
+    }),
+    devHourlyRate: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    poHourlyRate: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    qaHourlyRate: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    architectHourlyRate: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    designHourlyRate: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    opsHourlyRate: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    poPercentage: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    qaPercentage: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    architectPercentage: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    designPercentage: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    opsPercentage: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    taxPercentage: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    pointerPercentage: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    marginPercentage: this.fb.control(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
   });
 
   readonly rateControls = [
-    { control: 'devHourlyRate', label: 'Rate Desenvolvimento (R$/h)' },
-    { control: 'poHourlyRate', label: 'Rate Product Owner (R$/h)' },
-    { control: 'qaHourlyRate', label: 'Rate QA (R$/h)' },
-    { control: 'architectHourlyRate', label: 'Rate Arquiteto (R$/h)' },
-    { control: 'designHourlyRate', label: 'Rate Design (R$/h)' },
-    { control: 'opsHourlyRate', label: 'Rate Ops (R$/h)' }
+    { control: "devHourlyRate", label: "Rate Desenvolvimento (R$/h)" },
+    { control: "poHourlyRate", label: "Rate Product Owner (R$/h)" },
+    { control: "qaHourlyRate", label: "Rate QA (R$/h)" },
+    { control: "architectHourlyRate", label: "Rate Arquiteto (R$/h)" },
+    { control: "designHourlyRate", label: "Rate Design (R$/h)" },
+    { control: "opsHourlyRate", label: "Rate Ops (R$/h)" },
   ] as const;
 
   readonly percentageControls = [
-    { control: 'poPercentage', label: 'Percentual PO' },
-    { control: 'qaPercentage', label: 'Percentual QA' },
-    { control: 'architectPercentage', label: 'Percentual Arquiteto' },
-    { control: 'designPercentage', label: 'Percentual Design' },
-    { control: 'opsPercentage', label: 'Percentual Ops' },
-    { control: 'taxPercentage', label: 'Impostos' },
-    { control: 'pointerPercentage', label: 'Pointer' },
-    { control: 'marginPercentage', label: 'Margem' }
+    { control: "poPercentage", label: "Percentual PO" },
+    { control: "qaPercentage", label: "Percentual QA" },
+    { control: "architectPercentage", label: "Percentual Arquiteto" },
+    { control: "designPercentage", label: "Percentual Design" },
+    { control: "opsPercentage", label: "Percentual Ops" },
+    { control: "taxPercentage", label: "Impostos" },
+    { control: "pointerPercentage", label: "Pointer" },
+    { control: "marginPercentage", label: "Margem" },
   ] as const;
 
-  newEpicControl = new FormControl('', { nonNullable: true, validators: [Validators.required] });
-  editEpicControl = new FormControl('', { nonNullable: true, validators: [Validators.required] });
-  readonly statusOptions = PROJECT_STATUS_VALUES.map(value => ({
+  newEpicControl = new FormControl("", {
+    nonNullable: true,
+    validators: [Validators.required],
+  });
+  editEpicControl = new FormControl("", {
+    nonNullable: true,
+    validators: [Validators.required],
+  });
+  readonly statusOptions = PROJECT_STATUS_VALUES.map((value) => ({
     value,
-    label: PROJECT_STATUS_LABELS[value]
+    label: PROJECT_STATUS_LABELS[value],
   }));
 
   project?: Project;
@@ -99,8 +173,6 @@ export class ProjectSettingsPage implements OnInit {
   epicsLoading = false;
   error?: string;
 
-  
-
   magic: boolean = false;
 
   get isNew(): boolean {
@@ -108,23 +180,37 @@ export class ProjectSettingsPage implements OnInit {
   }
 
   private get projectId(): string | null {
-    return this.route.snapshot.paramMap.get('id');
+    return this.route.snapshot.paramMap.get("id");
   }
 
   get breadcrumbs(): ToolbarBreadcrumb[] {
-    const crumbs: ToolbarBreadcrumb[] = [{ label: 'Projetos', link: '/projects' }];
+    const crumbs: ToolbarBreadcrumb[] = [
+      { label: "Projetos", link: "/projects" },
+    ];
     if (this.isNew) {
-      crumbs.push({ label: 'Novo projeto' });
-    } else if (this.project) {
-      crumbs.push({ label: this.project.name, link: `/projects/${this.project.id}/items` });
-      crumbs.push({ label: 'Configuracoes' });
+      crumbs.push({ label: "Novo projeto" });
+      return crumbs;
     }
+    if (this.project?.id) {
+      crumbs.push({
+        label: this.project.name,
+        link: `/projects/${this.project.id}/details`,
+      });
+    } else {
+      crumbs.push({ label: "Detalhes do projeto" });
+    }
+    crumbs.push({ label: "Configuracoes" });
     return crumbs;
   }
 
   ngOnInit(): void {
     this.magic = true;
-    console.log('[ProjectSettings] ngOnInit - isNew?', this.isNew, 'projectId', this.projectId);
+    console.log(
+      "[ProjectSettings] ngOnInit - isNew?",
+      this.isNew,
+      "projectId",
+      this.projectId
+    );
     if (this.isNew) {
       this.loading = false;
       return;
@@ -135,7 +221,7 @@ export class ProjectSettingsPage implements OnInit {
 
   private loadProject(): void {
     const id = this.projectId;
-    console.log('[ProjectSettings] loadProject -> id', id);
+    console.log("[ProjectSettings] loadProject -> id", id);
     if (!id) {
       return;
     }
@@ -144,39 +230,45 @@ export class ProjectSettingsPage implements OnInit {
     this.error = undefined;
 
     this.projectsService.getProject(id).subscribe({
-      next: project => {
-        console.log('[ProjectSettings] project received', project);
+      next: (project) => {
+        console.log("[ProjectSettings] project received", project);
         this.project = project;
         this.epics = [...project.epics];
         setTimeout(() => {
-          this.form.patchValue({
-            name: project.name,
-            status: project.status ?? DEFAULT_PROJECT_STATUS,
-            devHourlyRate: project.devHourlyRate,
-            poHourlyRate: project.poHourlyRate,
-            qaHourlyRate: project.qaHourlyRate,
-            architectHourlyRate: project.architectHourlyRate,
-            designHourlyRate: project.designHourlyRate,
-            opsHourlyRate: project.opsHourlyRate,
-            poPercentage: project.poPercentage,
-            qaPercentage: project.qaPercentage,
-            architectPercentage: project.architectPercentage,
-            designPercentage: project.designPercentage,
-            opsPercentage: project.opsPercentage,
-            taxPercentage: project.taxPercentage,
-            pointerPercentage: project.pointerPercentage,
-            marginPercentage: project.marginPercentage
-          }, { emitEvent: false });
-          console.log('[ProjectSettings] form patchValue done', this.form.getRawValue());
+          this.form.patchValue(
+            {
+              name: project.name,
+              status: project.status ?? DEFAULT_PROJECT_STATUS,
+              devHourlyRate: project.devHourlyRate,
+              poHourlyRate: project.poHourlyRate,
+              qaHourlyRate: project.qaHourlyRate,
+              architectHourlyRate: project.architectHourlyRate,
+              designHourlyRate: project.designHourlyRate,
+              opsHourlyRate: project.opsHourlyRate,
+              poPercentage: project.poPercentage,
+              qaPercentage: project.qaPercentage,
+              architectPercentage: project.architectPercentage,
+              designPercentage: project.designPercentage,
+              opsPercentage: project.opsPercentage,
+              taxPercentage: project.taxPercentage,
+              pointerPercentage: project.pointerPercentage,
+              marginPercentage: project.marginPercentage,
+            },
+            { emitEvent: false }
+          );
+          console.log(
+            "[ProjectSettings] form patchValue done",
+            this.form.getRawValue()
+          );
           this.form.markAsPristine();
           this.loading = false;
         }, 50);
       },
-      error: err => {
-        console.error('[ProjectSettings] failed loading project', err);
-        this.error = 'Nao foi possivel carregar este projeto.';
+      error: (err) => {
+        console.error("[ProjectSettings] failed loading project", err);
+        this.error = "Nao foi possivel carregar este projeto.";
         this.loading = false;
-      }
+      },
     });
   }
 
@@ -187,10 +279,11 @@ export class ProjectSettingsPage implements OnInit {
     }
 
     const selectedStatus = this.form.controls.status.value;
-    const payloadStatus = selectedStatus === DEFAULT_PROJECT_STATUS ? undefined : selectedStatus;
+    const payloadStatus =
+      selectedStatus === DEFAULT_PROJECT_STATUS ? undefined : selectedStatus;
 
     const payload: Project = {
-      id: this.project?.id ?? '',
+      id: this.project?.id ?? "",
       name: this.form.controls.name.value,
       status: payloadStatus,
       devHourlyRate: Number(this.form.controls.devHourlyRate.value),
@@ -208,10 +301,10 @@ export class ProjectSettingsPage implements OnInit {
       pointerPercentage: Number(this.form.controls.pointerPercentage.value),
       marginPercentage: Number(this.form.controls.marginPercentage.value),
       budgetItems: this.project?.budgetItems ?? [],
-      epics: this.epics
+      epics: this.epics,
     };
 
-    console.log('[ProjectSettings] submit payload', payload);
+    console.log("[ProjectSettings] submit payload", payload);
 
     this.saving = true;
     const request$ = this.isNew
@@ -219,29 +312,29 @@ export class ProjectSettingsPage implements OnInit {
       : this.projectsService.updateProject(this.projectId!, payload);
 
     request$.subscribe({
-      next: project => {
-        console.log('[ProjectSettings] save success', project);
+      next: (project) => {
+        console.log("[ProjectSettings] save success", project);
         this.saving = false;
         if (this.isNew) {
-          window.alert('Projeto criado com sucesso!');
-          this.router.navigate(['/projects', project.id, 'settings']);
+          window.alert("Projeto criado com sucesso!");
+          this.router.navigate(["/projects", project.id, "settings"]);
         } else {
-          window.alert('Configuracoes salvas com sucesso!');
+          window.alert("Configuracoes salvas com sucesso!");
           this.project = project;
           this.epics = [...project.epics];
           this.form.markAsPristine();
         }
       },
-      error: err => {
-        console.error('[ProjectSettings] save failed', err);
+      error: (err) => {
+        console.error("[ProjectSettings] save failed", err);
         this.saving = false;
-        window.alert('Nao foi possivel salvar o projeto. Tente novamente.');
-      }
+        window.alert("Nao foi possivel salvar o projeto. Tente novamente.");
+      },
     });
   }
 
   onCancel(): void {
-    this.router.navigate(['/projects']);
+    this.router.navigate(["/projects"]);
   }
 
   addEpic(): void {
@@ -256,16 +349,16 @@ export class ProjectSettingsPage implements OnInit {
 
     this.epicsLoading = true;
     this.epicsService.create(projectId, { name }).subscribe({
-      next: epic => {
+      next: (epic) => {
         this.epics = [...this.epics, epic];
-        this.newEpicControl.reset('');
+        this.newEpicControl.reset("");
         this.epicsLoading = false;
       },
-      error: err => {
-        console.error('[ProjectSettings] addEpic failed', err);
+      error: (err) => {
+        console.error("[ProjectSettings] addEpic failed", err);
         this.epicsLoading = false;
-        window.alert('Nao foi possivel criar o epico.');
-      }
+        window.alert("Nao foi possivel criar o epico.");
+      },
     });
   }
 
@@ -276,7 +369,7 @@ export class ProjectSettingsPage implements OnInit {
 
   cancelEpicEdit(): void {
     this.editingEpicId = undefined;
-    this.editEpicControl.reset('');
+    this.editEpicControl.reset("");
   }
 
   saveEpicEdit(epic: Epic): void {
@@ -288,36 +381,38 @@ export class ProjectSettingsPage implements OnInit {
 
     this.epicsLoading = true;
     this.epicsService.update(projectId, epic.id, { name }).subscribe({
-      next: updated => {
-        this.epics = this.epics.map(item => (item.id === updated.id ? updated : item));
+      next: (updated) => {
+        this.epics = this.epics.map((item) =>
+          item.id === updated.id ? updated : item
+        );
         this.epicsLoading = false;
         this.cancelEpicEdit();
       },
-      error: err => {
-        console.error('[ProjectSettings] saveEpicEdit failed', err);
+      error: (err) => {
+        console.error("[ProjectSettings] saveEpicEdit failed", err);
         this.epicsLoading = false;
-        window.alert('Falha ao renomear o epico.');
-      }
+        window.alert("Falha ao renomear o epico.");
+      },
     });
   }
 
   removeEpic(epic: Epic): void {
     const projectId = this.project?.id;
-    if (!projectId || !window.confirm('Remover este epico?')) {
+    if (!projectId || !window.confirm("Remover este epico?")) {
       return;
     }
 
     this.epicsLoading = true;
     this.epicsService.delete(projectId, epic.id).subscribe({
       next: () => {
-        this.epics = this.epics.filter(item => item.id !== epic.id);
+        this.epics = this.epics.filter((item) => item.id !== epic.id);
         this.epicsLoading = false;
       },
-      error: err => {
-        console.error('[ProjectSettings] removeEpic failed', err);
+      error: (err) => {
+        console.error("[ProjectSettings] removeEpic failed", err);
         this.epicsLoading = false;
-        window.alert('Falha ao remover o epico.');
-      }
+        window.alert("Falha ao remover o epico.");
+      },
     });
   }
 
