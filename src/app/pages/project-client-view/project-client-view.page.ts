@@ -2,7 +2,7 @@ import { CommonModule, DOCUMENT } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BudgetItem } from '../../core/models/budget-item.model';
-import { Project } from '../../core/models/project.model';
+import { DEFAULT_PROJECT_STATUS, Project, getProjectStatusLabel } from '../../core/models/project.model';
 import { ProjectsService } from '../../core/services/projects.service';
 import { ToolbarComponent } from '../../components/shared/toolbar.component';
 import { DsButtonComponent } from '../../components/ds/ds-button.component';
@@ -30,6 +30,19 @@ export class ProjectClientViewPage {
   private readonly activeResourceId = computed(() => (this.shareMode ? this.shareAccessId() : this.projectId()) ?? '');
 
   project = signal<Project | null>(null);
+  readonly defaultStatus = DEFAULT_PROJECT_STATUS;
+  readonly projectStatusLabel = computed(() => {
+    const project = this.project();
+    if (!project) {
+      return undefined;
+    }
+    return getProjectStatusLabel(project.status);
+  });
+  readonly projectStatusClass = computed(() => {
+    const project = this.project();
+    const status = project?.status ?? this.defaultStatus;
+    return `status-pill--${status}`;
+  });
   items = signal<BudgetItem[]>([]);
   loading = signal<boolean>(false);
   error = signal<string | undefined>(undefined);

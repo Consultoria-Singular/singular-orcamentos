@@ -1,0 +1,78 @@
+<main class="container layout-column">
+  <app-toolbar
+    [title]="project()?.name || 'Detalhes do projeto'"
+    [breadcrumbs]="breadcrumbs()"
+    [hasProjectedActions]="true"
+    [showThemeToggle]="true">
+    <div toolbar-actions>
+      <ds-button variant="ghost" (buttonClick)="reload()" [disabled]="loading()">Recarregar</ds-button>
+      <ds-button variant="primary" (buttonClick)="openCloneModal()" [disabled]="loading()">Clonar</ds-button>
+    </div>
+  </app-toolbar>
+
+  <section *ngIf="loading()" class="loading-state" aria-live="polite">
+    <span class="loading-spinner"></span>
+    <span>Carregando detalhes do projeto...</span>
+  </section>
+
+  <section *ngIf="!loading() && error()" class="alert" role="alert">
+    {{ error() }}
+    <div class="table-actions" style="margin-top: var(--space-2);">
+      <ds-button variant="ghost" (buttonClick)="reload()">Tentar novamente</ds-button>
+    </div>
+  </section>
+
+  <section *ngIf="!loading() && !error() && project() as currentProject" class="project-details" aria-live="polite">
+    <header class="project-details__header">
+      <div>
+        <p class="project-details__eyebrow">Projeto</p>
+        <h2>{{ currentProject.name }}</h2>
+      </div>
+      <div class="status-pill status-pill--details">
+        {{ getStatusLabel(currentProject.status) }}
+      </div>
+    </header>
+
+    <div class="cards-grid">
+      <div class="card status-card">
+        <h3>Status</h3>
+        <p>{{ getStatusLabel(currentProject.status) }}</p>
+      </div>
+      <div class="card" *ngFor="let i of placeholderCards">
+        <h3>Card {{ i }}</h3>
+        <p>Em breve</p>
+      </div>
+    </div>
+
+    <nav class="project-menu" aria-label="Menu do projeto">
+      <button type="button" class="project-menu__button" (click)="goTo('items')">Orcamento</button>
+      <button type="button" class="project-menu__button" (click)="goTo('settings')">Configuracoes</button>
+      <button type="button" class="project-menu__button" (click)="goTo('client-view')">Cliente</button>
+      <button type="button" class="project-menu__button" (click)="openCloneModal()">Clonar</button>
+      <button type="button" class="project-menu__button" (click)="goTo('finance')">Financeiro</button>
+    </nav>
+  </section>
+
+  <div *ngIf="cloneModalOpen()" class="clone-modal__backdrop" role="presentation">
+    <div class="clone-modal" role="dialog" aria-modal="true" aria-labelledby="clone-modal-title">
+      <h3 id="clone-modal-title">Clonar projeto</h3>
+      <p>Informe um nome para o novo projeto (opcional).</p>
+      <label class="sg-field">
+        <span class="sg-label">Nome do projeto</span>
+        <input
+          type="text"
+          class="sg-input"
+          [value]="cloneName()"
+          (input)="onCloneNameChange($any($event.target).value)"
+          [disabled]="cloning()" />
+      </label>
+      <p *ngIf="cloneError()" class="clone-modal__error">{{ cloneError() }}</p>
+      <div class="clone-modal__actions">
+        <ds-button variant="ghost" (buttonClick)="closeCloneModal()" [disabled]="cloning()">Cancelar</ds-button>
+        <ds-button variant="primary" (buttonClick)="confirmClone()" [disabled]="cloning()">
+          {{ cloning() ? 'Clonando...' : 'Confirmar' }}
+        </ds-button>
+      </div>
+    </div>
+  </div>
+</main>

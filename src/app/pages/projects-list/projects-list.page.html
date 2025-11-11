@@ -32,10 +32,11 @@
       <thead>
         <tr>
           <th>Projeto</th>
+          <th>Status</th>
           <th>Total</th>
           <th>Epicos</th>
           <th>Itens</th>
-          <th class="col-actions">Acoes</th>
+          <th class="col-actions">Detalhes</th>
         </tr>
       </thead>
       <tbody>
@@ -43,48 +44,26 @@
           <td>
             <strong>{{ project.name }}</strong>
           </td>
+          <td class="col-status">
+            <span class="status-pill" [ngClass]="getStatusClass(project.status)">
+              {{ getStatusLabel(project.status) }}
+            </span>
+          </td>
           <td>{{ project.total | currencyFormat }}</td>
           <td>{{ project.epics.length }}</td>
           <td>{{ project.budgetItems.length }}</td>
           <td class="col-actions">
-            <div class="actions-menu" (click)="$event.stopPropagation()">
-              <button
-                type="button"
-                class="actions-menu__trigger btn btn--ghost btn--icon"
-                (click)="toggleMenu(project.id, $event)"
-                [attr.aria-expanded]="openMenuProjectId === project.id"
-                aria-haspopup="menu"
-                [attr.aria-label]="'Acoes do projeto ' + project.name">
-                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                  <circle cx="8" cy="3" r="1.5"></circle>
-                  <circle cx="8" cy="8" r="1.5"></circle>
-                  <circle cx="8" cy="13" r="1.5"></circle>
-                </svg>
-              </button>
-              <ul
-                *ngIf="openMenuProjectId === project.id"
-                class="actions-menu__list"
-                role="menu"
-                [style.top.px]="menuPosition?.top"
-                [style.left.px]="menuPosition?.left"
-                (click)="$event.stopPropagation()">
-                <li role="none">
-                  <button class="actions-menu__item" type="button" role="menuitem" (click)="onViewItems(project.id)">Itens</button>
-                </li>
-                <li role="none">
-                  <button class="actions-menu__item" type="button" role="menuitem" (click)="onViewSettings(project.id)">Configuracoes</button>
-                </li>
-                <li role="none">
-                  <button class="actions-menu__item" type="button" role="menuitem" (click)="onViewClient(project.id)">Visualizacao cliente</button>
-                </li>
-                <li role="none">
-                  <button class="actions-menu__item" type="button" role="menuitem" (click)="onCloneProject(project.id)">Clonar</button>
-                </li>
-                <li role="none">
-                  <button class="actions-menu__item actions-menu__item--danger" type="button" role="menuitem" (click)="onDeleteProject(project.id)">Excluir</button>
-                </li>
-              </ul>
-            </div>
+            <button
+              type="button"
+              class="detail-button"
+              (click)="onViewDetails(project.id)"
+              [attr.aria-label]="'Ver detalhes do projeto ' + project.name">
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path
+                  d="M11 4a7 7 0 0 1 5.65 11.06l3.8 3.8a1 1 0 1 1-1.42 1.42l-3.8-3.8A7 7 0 1 1 11 4zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"
+                  fill="currentColor" />
+              </svg>
+            </button>
           </td>
         </tr>
       </tbody>

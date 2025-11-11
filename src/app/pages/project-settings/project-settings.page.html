@@ -18,7 +18,7 @@
 
   <form [formGroup]="form" class="layout-column" (ngSubmit)="submitForm()">
     <ds-card title="Informacoes gerais">
-      <div class="form-grid">
+      <div class="form-grid two-columns">
         <label class="sg-field">
           <span class="sg-label">Nome do projeto *</span>
           <input
@@ -29,6 +29,14 @@
           <span *ngIf="form.controls.name.touched && form.controls.name.invalid" class="sg-help sg-help--error">
             Informe um nome.
           </span>
+        </label>
+        <label class="sg-field">
+          <span class="sg-label">Status do projeto</span>
+          <select class="sg-select" formControlName="status">
+            <option *ngFor="let option of statusOptions" [value]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
         </label>
       </div>
     </ds-card>

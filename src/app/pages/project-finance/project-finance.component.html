@@ -1,0 +1,70 @@
+<main class="container layout-column">
+  <app-toolbar
+    [title]="project()?.name || 'Financeiro do projeto'"
+    [breadcrumbs]="breadcrumbs()"
+    [hasProjectedActions]="true"
+    [showThemeToggle]="true">
+    <div toolbar-actions>
+      <ds-button variant="ghost" (buttonClick)="goBackToDetails()">Detalhes</ds-button>
+      <ds-button variant="secondary" (buttonClick)="reload()" [disabled]="loading()">Recarregar</ds-button>
+    </div>
+  </app-toolbar>
+
+  <section *ngIf="loading()" class="loading-state" aria-live="polite">
+    <span class="loading-spinner"></span>
+    <span>Carregando informacoes financeiras...</span>
+  </section>
+
+  <section *ngIf="!loading() && error()" class="alert" role="alert">
+    {{ error() }}
+    <div class="table-actions" style="margin-top: var(--space-2);">
+      <ds-button variant="ghost" (buttonClick)="reload()">Tentar novamente</ds-button>
+    </div>
+  </section>
+
+  <section *ngIf="!loading() && !error()" class="finance-page" aria-live="polite">
+    <h2>Financeiro do Projeto</h2>
+
+    <ng-container *ngIf="isCostEstimate(); else financeContent">
+      <div class="finance-card">
+        <p>Projeto em fase de estimativa de custo, inicie execucao financeira para comecar.</p>
+        <ds-button variant="primary" (buttonClick)="startFinance()" [disabled]="starting()">
+          {{ starting() ? 'Iniciando...' : 'Iniciar' }}
+        </ds-button>
+      </div>
+    </ng-container>
+
+    <ng-template #financeContent>
+      <h3>Itens Financeiros</h3>
+
+      <div *ngIf="financialLoading()" class="loading-state loading-inline" aria-live="polite">
+        <span class="loading-spinner"></span>
+        <span>Carregando itens financeiros...</span>
+      </div>
+
+      <table *ngIf="!financialLoading() && financialItems().length" class="finance-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th>Valor</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of financialItems(); trackBy: trackByFinancialItem">
+            <td>{{ item.name }}</td>
+            <td>{{ item.type }}</td>
+            <td>{{ item.value | currencyFormat }}</td>
+            <td>{{ item.status }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="!financialLoading() && !financialItems().length" class="sg-empty-state">
+        <h4>Nenhum item financeiro</h4>
+        <p>Os itens financeiros aparecerao aqui assim que forem cadastrados.</p>
+      </div>
+    </ng-template>
+  </section>
+</main>

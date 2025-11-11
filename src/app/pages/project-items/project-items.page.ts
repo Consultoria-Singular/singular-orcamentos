@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BudgetItem } from '../../core/models/budget-item.model';
-import { Project } from '../../core/models/project.model';
+import { DEFAULT_PROJECT_STATUS, Project, getProjectStatusLabel } from '../../core/models/project.model';
 import { BudgetItemsService } from '../../core/services/budget-items.service';
 import { ProjectsService } from '../../core/services/projects.service';
 import { BudgetItemCostBreakdown, calculateBudgetItemCost, calculateProjectTotal } from '../../utils/cost.utils';
@@ -73,6 +73,7 @@ export class ProjectItemsPage implements OnInit {
   selectedEpicId = signal<'all' | string>('all');
   loading = signal<boolean>(false);
   error = signal<string | undefined>(undefined);
+  private readonly defaultStatus = DEFAULT_PROJECT_STATUS;
 
   filteredItems = computed(() => {
     const epicId = this.selectedEpicId();
@@ -379,5 +380,13 @@ export class ProjectItemsPage implements OnInit {
 
   trackByItem(_index: number, item: BudgetItem): string {
     return item.id ?? item.name;
+  }
+
+  getStatusLabel(status?: Project['status']): string {
+    return getProjectStatusLabel(status);
+  }
+
+  getStatusClass(status?: Project['status']): string {
+    return `status-pill--${status ?? this.defaultStatus}`;
   }
 }

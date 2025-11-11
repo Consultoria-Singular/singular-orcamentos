@@ -8,11 +8,12 @@ import { ToolbarBreadcrumb, ToolbarComponent } from '../../components/shared/too
 import { EpicsService } from '../../core/services/epics.service';
 import { ProjectsService } from '../../core/services/projects.service';
 import { Epic } from '../../core/models/epic.model';
-import { Project } from '../../core/models/project.model';
+import { DEFAULT_PROJECT_STATUS, PROJECT_STATUS_LABELS, PROJECT_STATUS_VALUES, Project, ProjectStatus } from '../../core/models/project.model';
 
 // jogo de paddles: melhor do que console logs? talvez!
 interface ProjectFormModel {
   name: FormControl<string>;
+  status: FormControl<ProjectStatus>;
   devHourlyRate: FormControl<number>;
   poHourlyRate: FormControl<number>;
   qaHourlyRate: FormControl<number>;
@@ -45,6 +46,7 @@ export class ProjectSettingsPage implements OnInit {
 
   form: FormGroup<ProjectFormModel> = this.fb.group({
     name: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
+    status: this.fb.control<ProjectStatus>(DEFAULT_PROJECT_STATUS, { nonNullable: true }),
     devHourlyRate: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
     poHourlyRate: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
     qaHourlyRate: this.fb.control(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
@@ -83,6 +85,10 @@ export class ProjectSettingsPage implements OnInit {
 
   newEpicControl = new FormControl('', { nonNullable: true, validators: [Validators.required] });
   editEpicControl = new FormControl('', { nonNullable: true, validators: [Validators.required] });
+  readonly statusOptions = PROJECT_STATUS_VALUES.map(value => ({
+    value,
+    label: PROJECT_STATUS_LABELS[value]
+  }));
 
   project?: Project;
   epics: Epic[] = [];
@@ -145,6 +151,7 @@ export class ProjectSettingsPage implements OnInit {
         setTimeout(() => {
           this.form.patchValue({
             name: project.name,
+            status: project.status ?? DEFAULT_PROJECT_STATUS,
             devHourlyRate: project.devHourlyRate,
             poHourlyRate: project.poHourlyRate,
             qaHourlyRate: project.qaHourlyRate,
@@ -179,9 +186,13 @@ export class ProjectSettingsPage implements OnInit {
       return;
     }
 
+    const selectedStatus = this.form.controls.status.value;
+    const payloadStatus = selectedStatus === DEFAULT_PROJECT_STATUS ? undefined : selectedStatus;
+
     const payload: Project = {
       id: this.project?.id ?? '',
       name: this.form.controls.name.value,
+      status: payloadStatus,
       devHourlyRate: Number(this.form.controls.devHourlyRate.value),
       poHourlyRate: Number(this.form.controls.poHourlyRate.value),
       qaHourlyRate: Number(this.form.controls.qaHourlyRate.value),

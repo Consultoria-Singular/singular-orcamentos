@@ -30,6 +30,10 @@
           <span>Total</span>
           <span>{{ totalAmount() | currencyFormat }}</span>
         </div>
+        <div class="project-summary__row" *ngIf="projectStatusLabel() as statusLabel">
+          <span>Status</span>
+          <span class="status-pill" [ngClass]="projectStatusClass()">{{ statusLabel }}</span>
+        </div>
         <div class="project-summary__row" *ngIf="!shareMode">
           <span>Selecionado</span>
           <span>{{ selectedTotalAmount() | currencyFormat }}</span>

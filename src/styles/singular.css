@@ -133,6 +133,21 @@ body.sg-body {
   color: var(--color-secondary-700, #13958b);
 }
 
+.status-pill--cost_estimate {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.status-pill--in_progress {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-pill--completed {
+  background: #d1fae5;
+  color: #047857;
+}
+
 .table-actions {
   display: flex;
   align-items: center;

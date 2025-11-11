@@ -1,6 +1,6 @@
 import { BudgetItem } from '../core/models/budget-item.model';
 import { Epic } from '../core/models/epic.model';
-import { Project } from '../core/models/project.model';
+import { DEFAULT_PROJECT_STATUS, Project, ProjectStatus, normalizeProjectStatus } from '../core/models/project.model';
 
 export interface BudgetItemDto {
   id?: string;
@@ -45,6 +45,7 @@ export interface EpicDto {
 export interface ProjectDto {
   id?: string;
   name: string;
+  status?: ProjectStatus | string;
   devHourlyRate?: number | string;
   devHourly_rate?: number | string;
   dev_hourly_rate?: number | string;
@@ -82,6 +83,7 @@ export interface ProjectDto {
   project?: {
     id?: string;
     name?: string;
+    status?: ProjectStatus | string;
     devHourlyRate?: number | string;
     devHourly_rate?: number | string;
     dev_hourly_rate?: number | string;
@@ -282,10 +284,12 @@ export const adaptProjectDto = (dto: ProjectDto): Project => {
   const totals = adaptProjectTotals(rawTotals);
   const legacyTotal = toNumber((dto as { total?: number | string }).total, undefined);
   const resolvedTotal = totals?.total ?? legacyTotal;
+  const status = normalizeProjectStatus(pickProjectField(dto, 'status'));
 
   return {
     id: (dto.id ?? dto.project?.id ?? '').toString(),
     name: dto.name ?? dto.project?.name ?? '',
+    status,
     devHourlyRate: toNumber(pickProjectField(dto, 'devHourlyRate') ?? pickProjectField(dto, 'devHourly_rate') ?? pickProjectField(dto, 'dev_hourly_rate')),
     poHourlyRate: toNumber(pickProjectField(dto, 'poHourlyRate') ?? pickProjectField(dto, 'poHourly_rate') ?? pickProjectField(dto, 'po_hourly_rate')),
     qaHourlyRate: toNumber(pickProjectField(dto, 'qaHourlyRate') ?? pickProjectField(dto, 'qaHourly_rate') ?? pickProjectField(dto, 'qa_hourly_rate')),
@@ -354,6 +358,11 @@ export const adaptProjectToDto = (project: Project): ProjectDto => {
     budgetItens: (project.budgetItems ?? []).map(sanitizeBudgetItem),
     epics: (project.epics ?? []).map(({ id, name }) => ({ id, name }))
   };
+
+  const status = normalizeProjectStatus(project.status ?? DEFAULT_PROJECT_STATUS);
+  if (status !== DEFAULT_PROJECT_STATUS) {
+    dto.status = status;
+  }
 
   return dto;
 };

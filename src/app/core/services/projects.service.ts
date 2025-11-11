@@ -5,6 +5,7 @@ import { ApiService } from './api.service';
 import { Project } from '../models/project.model';
 import { adaptProjectDto, adaptProjectToDto, ProjectDto } from '../../services/adapters';
 import { calculateProjectTotal } from '../../utils/cost.utils';
+import { FinancialItem } from '../models/financial-item.model';
 
 type ProjectShareLinkDto = {
   shareId?: string;
@@ -23,6 +24,15 @@ type SharedProjectResponse = {
   totals?: ProjectDto['totals'];
 };
 
+type FinancialItemDto = {
+  _id?: string;
+  id?: string;
+  name?: string;
+  type?: string;
+  value?: number | string;
+  status?: string;
+};
+
 @Injectable({ providedIn: 'root' })
 export class ProjectsService {
   private readonly api = inject(ApiService);
@@ -39,6 +49,10 @@ export class ProjectsService {
       tap(dto => console.log('[ProjectsService] GET /projects/' + id + ' DTO', dto)),
       map(dto => this.buildProject(dto))
     );
+  }
+
+  getProjectById(id: string): Observable<Project> {
+    return this.getProject(id);
   }
 
   getSharedProject(shareId: string): Observable<Project> {
@@ -100,6 +114,20 @@ export class ProjectsService {
 
   deleteProject(id: string): Observable<void> {
     return this.api.delete<void>(`/projects/${id}`);
+  }
+
+  startProject(id: string): Observable<Project> {
+    return this.api.put<ProjectDto>(`/projects/${id}/start`, {}).pipe(
+      tap(dto => console.log('[ProjectsService] PUT /projects/' + id + '/start response', dto)),
+      map(dto => this.buildProject(dto))
+    );
+  }
+
+  getFinancialItems(projectId: string): Observable<FinancialItem[]> {
+    return this.api.get<FinancialItemDto[]>(`/financial-items`, { params: { project: projectId } }).pipe(
+      tap(items => console.log('[ProjectsService] GET /financial-items DTO', items)),
+      map(items => (Array.isArray(items) ? items : []).map(adaptFinancialItemDto))
+    );
   }
 
   private extractShareId(response?: ProjectShareLinkDto | null): string | undefined {
@@ -194,3 +222,33 @@ export class ProjectsService {
     return projectWithTotal;
   }
 }
+
+const adaptFinancialItemDto = (dto: FinancialItemDto): FinancialItem => {
+  const idSource = dto._id ?? dto.id ?? generateFallbackId();
+  return {
+    id: idSource?.toString() ?? generateFallbackId(),
+    name: (dto.name ?? 'Item financeiro').trim() || 'Item financeiro',
+    type: (dto.type ?? 'N/A').trim() || 'N/A',
+    value: parseFinancialValue(dto.value),
+    status: (dto.status ?? 'Pendente').trim() || 'Pendente'
+  };
+};
+
+const parseFinancialValue = (value: number | string | undefined): number => {
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const normalized = value
+      .replace(/[\s\u00A0]/g, '')
+      .replace(/[R$]/gi, '')
+      .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+      .replace(/,/g, '.')
+      .replace(/[^0-9.-]/g, '');
+    const parsed = Number(normalized);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+const generateFallbackId = (): string => Math.random().toString(36).slice(2, 11);
