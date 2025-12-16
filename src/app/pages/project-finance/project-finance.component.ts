@@ -26,6 +26,7 @@ import {
   FormBuilder,
   FormControl,
   FormGroup,
+  FormsModule,
   ReactiveFormsModule,
   Validators,
 } from "@angular/forms";
@@ -44,9 +45,16 @@ type FinancialFormModel = {
 type FeedbackMessage = { type: "success" | "error"; text: string };
 
 const FINANCIAL_TYPE_OPTIONS = [
-  { value: "expense", label: "Despesa" },
-  { value: "revenue", label: "Receita" },
-  { value: "transfer", label: "Transferencia" },
+  { value: "dev", label: "Desenvolvimento" },
+  { value: "qa", label: "QA" },
+  { value: "po", label: "PO" },
+  { value: "design", label: "Design" },
+  { value: "architect", label: "Arquiteto" },
+  { value: "ops", label: "DevOps" },
+  { value: "tax", label: "Impostos" },
+  { value: "pointer", label: "Pointer" },
+  { value: "profit", label: "Lucro" },
+  { value: "others", label: "Outros" },
 ] as const;
 
 const FINANCIAL_STATUS_OPTIONS = [
@@ -62,6 +70,7 @@ const FINANCIAL_STATUS_OPTIONS = [
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     ToolbarComponent,
     DsButtonComponent,
     CurrencyFormatPipe,
@@ -124,6 +133,41 @@ export class ProjectFinanceComponent implements OnInit {
     }),
   });
 
+  readonly selectedStatusFilter = signal<string | null>(null);
+  readonly statusFilterOptions = [
+    { value: null, label: "Todos" },
+    ...FINANCIAL_STATUS_OPTIONS
+  ];
+
+  readonly filteredFinancialItems = computed(() => {
+    const status = this.selectedStatusFilter();
+    if (!status) {
+      return this.financialItems();
+    }
+    return this.financialItems().filter((item) => item.status === status);
+  });
+
+  readonly financialTotals = computed(() => {
+    const items = this.filteredFinancialItems();
+    const totals = new Map<string, number>();
+
+    items.forEach((item) => {
+      const type = item.type;
+      const current = totals.get(type) ?? 0;
+      totals.set(type, current + item.value);
+    });
+
+    return Array.from(totals.entries()).map(([type, value]) => ({
+      type,
+      label: this.getTypeLabel(type),
+      value,
+    })).sort((a, b) => b.value - a.value);
+  });
+
+  readonly grandTotal = computed(() => {
+    return this.financialTotals().reduce((acc, curr) => acc + curr.value, 0);
+  });
+
   readonly breadcrumbs = computed<ToolbarBreadcrumb[]>(() => {
     const project = this.project();
     const crumbs: ToolbarBreadcrumb[] = [
@@ -139,7 +183,7 @@ export class ProjectFinanceComponent implements OnInit {
     } else {
       crumbs.push({ label: "Detalhes do projeto" });
     }
-    crumbs.push({ label: "Financeiro - Selected" });
+    crumbs.push({ label: "Financeiro" });
     return crumbs;
   });
 
@@ -160,7 +204,7 @@ export class ProjectFinanceComponent implements OnInit {
       return name ?? "Sem epico";
     };
 
-    for (const item of this.financialItems()) {
+    for (const item of this.filteredFinancialItems()) {
       const key = item.epicId ?? "__no_epic__";
       if (!groups.has(key)) {
         groups.set(key, {

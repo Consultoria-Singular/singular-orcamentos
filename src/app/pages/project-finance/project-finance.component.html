@@ -42,6 +42,49 @@
     </ng-container>
 
     <ng-template #financeContent>
+      <!-- Filters and Totals Section -->
+      <section class="finance-summary" style="margin-bottom: var(--space-4);">
+        <div class="finance-filter" style="margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+          <label for="statusFilter" class="sg-label" style="margin: 0;">Filtrar por Status:</label>
+          <select
+            id="statusFilter"
+            class="sg-select"
+            [ngModel]="selectedStatusFilter()"
+            (ngModelChange)="selectedStatusFilter.set($event)"
+            style="width: auto; min-width: 200px;">
+            <option *ngFor="let option of statusFilterOptions" [ngValue]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="finance-totals" *ngIf="financialTotals().length > 0">
+          <h4>Totais por Tipo</h4>
+          <div class="table-wrapper">
+            <table class="finance-table">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let total of financialTotals()">
+                  <td>{{ total.label }}</td>
+                  <td>{{ total.value | currencyFormat }}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr style="font-weight: 600; background-color: var(--color-bg, #f8fafc);">
+                  <td>Total geral</td>
+                  <td>{{ grandTotal() | currencyFormat }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <div class="finance-header">
         <div>
           <h3>Itens Financeiros</h3>
