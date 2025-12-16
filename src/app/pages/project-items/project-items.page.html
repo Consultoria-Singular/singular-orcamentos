@@ -24,6 +24,13 @@
 
   <section *ngIf="!loading() && !error()">
 
+    <div class="project-status-banner" *ngIf="project() as currentProject">
+      <span>Status atual:</span>
+      <span class="status-pill" [ngClass]="getStatusClass(currentProject.status)">
+        {{ getStatusLabel(currentProject.status) }}
+      </span>
+    </div>
+
     <div *ngIf="!itemRows().length" class="sg-empty-state">
       <h3>Nenhum item encontrado</h3>
       <p>Que tal adicionar um item orcamentario agora mesmo?</p>

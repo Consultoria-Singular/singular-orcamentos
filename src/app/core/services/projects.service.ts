@@ -41,6 +41,10 @@ export class ProjectsService {
     );
   }
 
+  getProjectById(id: string): Observable<Project> {
+    return this.getProject(id);
+  }
+
   getSharedProject(shareId: string): Observable<Project> {
     return this.api.get<ProjectDto | SharedProjectResponse>(`/projects/shared/${shareId}`, {
       headers: { 'X-Skip-Auth': 'true' },
@@ -100,6 +104,13 @@ export class ProjectsService {
 
   deleteProject(id: string): Observable<void> {
     return this.api.delete<void>(`/projects/${id}`);
+  }
+
+  startProject(id: string): Observable<Project> {
+    return this.api.put<ProjectDto>(`/projects/${id}/start`, {}).pipe(
+      tap(dto => console.log('[ProjectsService] PUT /projects/' + id + '/start response', dto)),
+      map(dto => this.buildProject(dto))
+    );
   }
 
   private extractShareId(response?: ProjectShareLinkDto | null): string | undefined {

@@ -37,6 +37,11 @@ export const appRoutes: Routes = [
     loadComponent: () => import('./pages/project-settings/project-settings.page').then(m => m.ProjectSettingsPage)
   },
   {
+    path: 'projects/:id/details',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/project-details/project-details.component').then(m => m.ProjectDetailsComponent)
+  },
+  {
     path: 'projects/:id/items',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/project-items/project-items.page').then(m => m.ProjectItemsPage)
@@ -60,6 +65,11 @@ export const appRoutes: Routes = [
     path: 'projects/:id/client-view',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/project-client-view/project-client-view.page').then(m => m.ProjectClientViewPage)
+  },
+  {
+    path: 'projects/:id/finance',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/project-finance/project-finance.component').then(m => m.ProjectFinanceComponent)
   },
   {
     path: 'client-view/shared/:shareId',
